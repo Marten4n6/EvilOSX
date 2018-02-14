@@ -1,4 +1,6 @@
 import os
+import subprocess
+import re
 
 
 class Module:
@@ -83,4 +85,13 @@ class Module:
                 output_file.write(response)
 
     def get_file_hash(self, file_path):
-        return os.popen("md5sum " + os.path.realpath(file_path)).readline().split(" ")[0]
+        md5_programs = ["md5sum", "md5"]  # Tested on Linux and Mac (lol @ Windows)
+
+        for program in md5_programs:
+            try:
+                hash_command = program + " " + os.path.realpath(file_path)
+                process = subprocess.Popen(hash_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+                return re.findall(r"([a-fA-F\d]{32})", (process.stdout.readline() + process.stderr.readline()))[0]
+            except IndexError:
+                continue
