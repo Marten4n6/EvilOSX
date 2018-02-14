@@ -33,4 +33,6 @@ class Module:
 
     def process_response(self, output_view, response):
         # Remove the useless colors, thanks.
-        output_view.add(re.sub(r'\[.*?;.*?m', '', response))
+        output_view.add(response.replace("\033[32m", "")
+                        .replace("\033[35m", "").replace("\033[34m", "")
+                        .replace("\033[1m", "").replace("\033[0m", "").replace("\\t", " " * 7))
