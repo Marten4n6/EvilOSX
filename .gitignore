@@ -1,0 +1,7 @@
+Builds
+output/
+EvilOSX.db
+server.cert
+server.key
+.idea/
+*.pyc
