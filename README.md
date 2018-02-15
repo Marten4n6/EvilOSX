@@ -15,7 +15,7 @@
   <a href="https://github.com/Marten4n6/EvilOSX/issues">
     <img src="https://img.shields.io/github/issues/Marten4n6/EvilOSX.svg">
   </a>
-  <a href="https://github.com/Marten4n6/EvilOSX">
+  <a href="https://github.com/Marten4n6/EvilOSX/pulls">
       <img src="https://img.shields.io/badge/contributions-welcome-orange.svg">
   </a>
 </p>
@@ -33,6 +33,8 @@
 - Retrieve Chrome passwords
 - Retrieve iCloud tokens and contacts
 - Download and upload files
+- iTunes iOS backup enumeration
+- Retrieve browser history (Chrome and Safari)
 - Attempt to get root via local privilege escalation
 - Auto installer, simply run EvilOSX on your target and the rest is handled automatically.
 
@@ -104,7 +106,7 @@ Feel free to submit any issues or feature requests.
 ## Credits
 
 - The awesome [Empire](https://github.com/EmpireProject) project
-- [manwhoami](https://github.com/manwhoami) for his projects: [OSXChromeDecrypt](https://github.com/manwhoami/OSXChromeDecrypt), [MMeTokenDecrypt](https://github.com/manwhoami/MMeTokenDecrypt)
+- [manwhoami](https://github.com/manwhoami) for his projects: [OSXChromeDecrypt](https://github.com/manwhoami/OSXChromeDecrypt), [MMeTokenDecrypt](https://github.com/manwhoami/MMeTokenDecrypt), [iCloudContacts](https://github.com/manwhoami/iCloudContacts)
 - [urwid](http://urwid.org/) and [this code](https://github.com/izderadicka/xmpp-tester/blob/master/commander.py) which saved me a lot of time with the GUI
 - Logo created by [motusora](https://www.behance.net/motusora)
 
