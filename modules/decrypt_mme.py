@@ -9,7 +9,8 @@ class Module:
             "Description": "Retrieves iCloud and MMe authorization tokens.",
             "References": [
                 "https://github.com/manwhoami/MMeTokenDecrypt"
-            ]
+            ],
+            "Task": False
         }
         self.code = None
 

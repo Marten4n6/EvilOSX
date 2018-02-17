@@ -6,7 +6,8 @@ class Module:
         self.info = {
             "Author": ["Marten4n6"],
             "Description": "Retrieves browser history (Chrome and Safari).",
-            "References": []
+            "References": [],
+            "Task": False
         }
         self.history_limit = None
         self.output_file = None

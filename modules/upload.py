@@ -6,7 +6,8 @@ class Module:
         self.info = {
             "Author": ["Marten4n6"],
             "Description": "Uploads a file to the client.",
-            "References": []
+            "References": [],
+            "Task": False
         }
         self.local_file = None
         self.output_directory = None

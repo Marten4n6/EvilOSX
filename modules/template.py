@@ -6,7 +6,8 @@ class Module:
             "References": [
                 # External links related to this module.
                 "http://example.com/"
-            ]
+            ],
+            "Task": False  # True if this module should be run in the background.
         }
         self.example_message = None
 

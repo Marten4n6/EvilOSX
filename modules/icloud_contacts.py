@@ -5,7 +5,8 @@ class Module:
             "Description": "Retrieves iCloud contacts.",
             "References": [
                 "https://github.com/manwhoami/iCloudContacts"
-            ]
+            ],
+            "Task": False
         }
         self.code = None
 

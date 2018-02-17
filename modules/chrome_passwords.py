@@ -9,7 +9,8 @@ class Module:
             "Description": "Retrieves Chrome passwords.",
             "References": [
                 "https://github.com/manwhoami/OSXChromeDecrypt"
-            ]
+            ],
+            "Task": False
         }
         self.code = None
 

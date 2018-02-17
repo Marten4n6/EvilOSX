@@ -3,7 +3,8 @@ class Module:
         self.info = {
             "Author": ["Marten4n6"],
             "Description": "Removes EvilOSX from the client.",
-            "References": []
+            "References": [],
+            "Task": False
         }
 
     def setup(self, module_view, output_view, successful):
