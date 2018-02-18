@@ -36,7 +36,7 @@
 - iTunes iOS backup enumeration
 - Retrieve browser history (Chrome and Safari)
 - Attempt to get root via local privilege escalation
-- Auto installer, simply run EvilOSX on your target and the rest is handled automatically.
+- Auto installer, simply run EvilOSX on your target and the rest is handled automatically
 
 ## How To Use
 ```bash
@@ -57,6 +57,7 @@ $ python server/server.py
 
 # Lastly, run the built EvilOSX on your target.
 ```
+![](https://i.imgur.com/u2FYrUu.png)
 
 ## Motivation
 
