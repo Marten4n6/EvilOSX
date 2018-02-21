@@ -32,6 +32,7 @@
 - Simple extendable [module](https://github.com/Marten4n6/EvilOSX/blob/master/modules/template.py) system
 - Retrieve Chrome passwords
 - Retrieve iCloud tokens and contacts
+- [Phish](https://en.wikipedia.org/wiki/Phishing) for iCloud passwords via iTunes
 - Download and upload files
 - iTunes iOS backup enumeration
 - Retrieve browser history (Chrome and Safari)
