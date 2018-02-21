@@ -3,7 +3,7 @@
 """Interacts with the user via urwid."""
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 
 from model import *
 from modules import *
@@ -328,6 +328,10 @@ class View(urwid.Frame):
                     self.output_view.add("The client is idle and will take longer to respond.", "attention")
 
                 if command in ["q", "quit", "exit"]:
+                    self.output_view.add("Disconnected from \"%s@%s\"." % (
+                        self._current_client.username, self._current_client.hostname
+                    ), "info")
+
                     self._current_client = None
                     self._input_view.set_connected_client()
                 elif command.startswith("use"):
