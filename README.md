@@ -34,6 +34,7 @@
 - Retrieve iCloud tokens and contacts
 - [Phish](https://en.wikipedia.org/wiki/Phishing) for iCloud passwords via iTunes
 - Download and upload files
+- Take a picture using the webcam
 - iTunes iOS backup enumeration
 - Retrieve browser history (Chrome and Safari)
 - Attempt to get root via local privilege escalation
