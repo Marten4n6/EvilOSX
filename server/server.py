@@ -3,7 +3,7 @@
 """Interacts with the user via urwid."""
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "1.1.2"
+__version__ = "1.1.3"
 
 from model import *
 from modules import *
@@ -75,7 +75,7 @@ class _ModulePrompt(urwid.Pile):
 
     def add(self, line, style=""):
         """Adds a line to the output list."""
-        with DRAW_LOCK:
+        with self._lock:
             # Set the height of the output list so the message is actually visible.
             self._output_layout.height = len(self._output_list.body) + 1
 
@@ -93,8 +93,9 @@ class _ModulePrompt(urwid.Pile):
 
     def cleanup(self):
         """Cleans up the output list."""
-        self._output_list.body = urwid.SimpleFocusListWalker([])
-        self._output_layout.height = 0
+        with self._lock:
+            self._output_list.body = urwid.SimpleFocusListWalker([])
+            self._output_layout.height = 0
 
     def prompt(self, message):
         """Blocking method, prompts the user and returns the response.
