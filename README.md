@@ -25,7 +25,7 @@
 ## Features
 
 - Emulate a simple terminal instance
-- Undetected by anti-virus (randomized hash, [HTTPS](https://en.wikipedia.org/wiki/HTTPS) communication)
+- Undetected by anti-virus (OpenSSL [AES-256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encrypted payloads, [HTTPS](https://en.wikipedia.org/wiki/HTTPS) communication)
 - Multi-threaded
 - No client dependencies (pure python)
 - Persistent
