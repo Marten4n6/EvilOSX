@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Interacts with the user via urwid."""
+from __future__ import print_function
+from __future__ import absolute_import
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 __version__ = "1.1.3"
 
-from model import *
-from modules import *
-from controller import *
+from .model import *
+from .modules import *
+from .controller import *
 import urwid
 import threading
 import ssl
@@ -415,7 +417,7 @@ class View(urwid.Frame):
 def generate_ca():
     """Generates the self-signed certificate authority."""
     if not os.path.exists("server.cert"):
-        print MESSAGE_INFO + "Generating certificate authority (HTTPS)..."
+        print(MESSAGE_INFO + "Generating certificate authority (HTTPS)...")
 
         information = "/C=US/ST=New York/L=Brooklyn/O=EvilOSX/CN=EvilOSX"
         os.popen("openssl req -newkey rsa:4096 -nodes -x509 -days 365 -subj \"%s\" -sha256 "
@@ -423,7 +425,7 @@ def generate_ca():
 
 
 def main():
-    print BANNER
+    print(BANNER)
 
     while True:
         try:
@@ -460,5 +462,5 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print "\n" + MESSAGE_INFO + "Interrupted."
+        print("\n" + MESSAGE_INFO + "Interrupted.")
         exit(0)
