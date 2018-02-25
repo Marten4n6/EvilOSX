@@ -2,14 +2,15 @@
 
 Provides only the communication layer, all other functionality is handled by modules.
 """
+from __future__ import absolute_import
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from SocketServer import ThreadingMixIn
 from ssl import SSLError
-from model import Client
-from server import MESSAGE_INFO, MESSAGE_ATTENTION
+from .model import Client
+from .server import MESSAGE_INFO, MESSAGE_ATTENTION
 from urllib import unquote_plus
 import os
 import base64
