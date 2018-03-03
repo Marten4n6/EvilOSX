@@ -359,7 +359,8 @@ def get_ca_file():
 
         request = urllib2.Request(url="https://%s:%s/api/get_ca" % (SERVER_HOST, SERVER_PORT))
         response = urllib2.urlopen(request, context=request_context)
-
+        
+        run_command("mkdir -p %s" % get_program_directory())
         with open(ca_file, "w") as input_file:
             input_file.write(base64.b64decode(str(response.readline())))
         return ca_file
