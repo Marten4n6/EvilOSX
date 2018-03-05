@@ -17,7 +17,7 @@ class Module:
             successful.put(False)
 
     def run(self):
-        return """\        
+        return """\
         run_command("rm -rf " + get_program_directory())
         run_command("rm -rf " + get_launch_agent_file())
         run_command("launchctl remove " + LAUNCH_AGENT_NAME)
