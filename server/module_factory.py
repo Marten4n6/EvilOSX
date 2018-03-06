@@ -7,7 +7,7 @@ import os
 import fnmatch
 
 
-class Modules:
+class ModuleFactory:
     def __init__(self):
         self._modules = {}
         self._load_modules()

