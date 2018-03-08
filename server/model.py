@@ -106,6 +106,16 @@ class ClientModel:
                 clients.append(Client(row[0], row[1], row[2], row[3], row[4], row[5], row[6]))
         return clients
 
+    def has_clients(self):
+        """:return True if there are available clients."""
+        with self._lock:
+            response = self._cursor.execute("SELECT * FROM clients LIMIT 1")
+
+            if response.fetchone() is None:
+                return False
+            else:
+                return True
+
     def send_command(self, command):
         """Adds a command for the client to execute.
 

