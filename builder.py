@@ -209,7 +209,7 @@ def main():
             if not loader_index:
                 loader_name, loader = loader_factory.get_loader(0)
             else:
-                loader_name, loader = loader_factory.get_loader(int(launcher_index))
+                loader_name, loader = loader_factory.get_loader(int(loader_index))
 
             break
         except ValueError:
