@@ -399,16 +399,23 @@ class View(urwid.Frame):
                                 self.output_view.add("That module doesn't exist!", "attention")
                 elif command.startswith("kill"):
                     # Kills a running task.
-                    module_name = command.replace("kill ", "").strip()
+                    task_name = command.replace("kill ", "").strip()
 
-                    if module_name == "kill":
+                    if task_name.isdigit():
+                        # Let the user kill regular processes as well.
+                        self.output_view.add("Killing system process instead of module.", "attention")
+
+                        self._model.send_command(Command(
+                            self._current_client.id, base64.b64encode("kill " + task_name))
+                        )
+                    elif task_name == "kill":
                         self.output_view.add("Invalid task name (see \"modules\").", "attention")
                         self.output_view.add("Usage: kill <task_name>", "attention")
                     else:
-                        self.output_view.add("Attempting to kill task \"%s\"..." % module_name, "info")
+                        self.output_view.add("Attempting to kill task \"%s\"..." % task_name, "info")
 
                         self._model.send_command(Command(
-                            self._current_client.id, base64.b64encode("kill_task"), module_name
+                            self._current_client.id, base64.b64encode("kill_task"), task_name
                         ))
                 else:
                     self.output_view.add("Running command: " + command, "info")
