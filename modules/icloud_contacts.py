@@ -94,7 +94,7 @@ class Module:
             return sorted(cards)
 
         
-        tokens_file = get_program_directory() + "/tokens.csv"
+        tokens_file = PROGRAM_DIRECTORY + "/tokens.csv"
         dsid = None
         mme_token = None
         
