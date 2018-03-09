@@ -33,7 +33,7 @@ class Module:
         return """\
         import csv
         
-        tokens_file = get_program_directory() + "/tokens.csv"
+        tokens_file = PROGRAM_DIRECTORY + "/tokens.csv"
         
         if os.path.exists(tokens_file):
             print MESSAGE_INFO + "\\"tokens.csv\\" already exists, skipping prompt..."
