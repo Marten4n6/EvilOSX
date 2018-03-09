@@ -44,9 +44,10 @@ class ClientController(BaseHTTPRequestHandler):
             )
             loader_options = payload_options["loader_options"]
 
-            self._output_view.add(
-                "[%s] Creating payload using key: %s" % (payload_options["loader_name"], client_key), "info"
-            )
+            self._output_view.add(self._output_view.SEPARATOR)
+            self._output_view.add("[%s] Creating payload using key: %s" % (
+                payload_options["loader_name"], client_key
+            )), "info"
 
             if not self._payload_factory:
                 self._payload_factory = PayloadFactory(self._loader_factory)
