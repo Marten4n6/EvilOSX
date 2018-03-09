@@ -59,8 +59,9 @@ $ python server/server.py
 
 # Lastly, run the built EvilOSX on your target.
 ```
-![](https://i.imgur.com/I49oznG.png)
-![](https://i.imgur.com/u2FYrUu.png)
+---
+![](https://i.imgur.com/VMncnhD.png)
+![](https://i.imgur.com/lC8XtlJ.png)
 
 ## Motivation
 
