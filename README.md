@@ -36,6 +36,7 @@
 - Download and upload files
 - Take a picture using the webcam
 - iTunes iOS backup enumeration
+- Retrieve or monitor the clipboard
 - Retrieve browser history (Chrome and Safari)
 - Attempt to get root via local privilege escalation
 - Auto installer, simply run EvilOSX on your target and the rest is handled automatically
@@ -59,8 +60,7 @@ $ python server/server.py
 
 # Lastly, run the built EvilOSX on your target.
 ```
----
-![](https://i.imgur.com/VMncnhD.png)
+![](https://i.imgur.com/IImALFV.png)
 ![](https://i.imgur.com/lC8XtlJ.png)
 
 ## Motivation
