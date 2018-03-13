@@ -42,6 +42,7 @@
 - Auto installer, simply run EvilOSX on your target and the rest is handled automatically
 
 ## How To Use
+
 ```bash
 # Install urwid (required for the server GUI)
 $ sudo pip install urwid
@@ -60,6 +61,8 @@ $ python server/server.py
 
 # Lastly, run the built EvilOSX on your target.
 ```
+**Because payloads are created unique to the target system (automatically by the server), the server must be running when any client connects for the first time.**
+
 ![](https://i.imgur.com/IImALFV.png)
 ![](https://i.imgur.com/lC8XtlJ.png)
 
