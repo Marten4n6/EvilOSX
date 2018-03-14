@@ -63,7 +63,9 @@ class LauncherFactory:
     """Creates launchers."""
 
     def __init__(self):
-        self._launchers = {}
+        self._launchers = {
+            "helpers": imp.load_source("helpers", os.path.join(os.path.dirname(__file__), "launchers", "helpers.py"))
+        }
         self._load_launchers()
 
     def _load_launchers(self):
@@ -73,14 +75,17 @@ class LauncherFactory:
                 launcher_name = file_name[0:-3]
                 launcher_path = os.path.join(root, file_name)
 
-                if launcher_name in ["template"]:
+                if launcher_name in ["__init__", "template", "helpers"]:
                     continue
 
                 self._launchers[launcher_name] = imp.load_source(launcher_name, launcher_path).Launcher()
 
     def get_launchers(self):
         """:return A list of all launchers."""
-        return self._launchers
+        launchers = dict(self._launchers)
+
+        launchers.pop("helpers")
+        return launchers
 
     def get_launcher(self, index):
         """:return A tuple containg the launcher's name and class."""
