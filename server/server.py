@@ -3,7 +3,7 @@
 """Interacts with the user via urwid."""
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "2.1.5"
+__version__ = "2.1.6"
 
 from model import *
 from module_factory import ModuleFactory
@@ -62,7 +62,7 @@ class _ModulePrompt(urwid.Pile):
         self._edit_box = urwid.Edit()
 
         self._queue = None
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
         self.previous_prompt = False
 
@@ -104,18 +104,19 @@ class _ModulePrompt(urwid.Pile):
         :param message The prompt message to display to the user.
         :type message str
         """
-        if self.previous_prompt:
-            # Clear the previous prompt.
-            self.cleanup()
-        else:
-            self.previous_prompt = True
+        with self._lock:
+            if self.previous_prompt:
+                # Clear the previous prompt.
+                self.cleanup()
+            else:
+                self.previous_prompt = True
 
-        self.add(message, "input")
-        self._queue = Queue()
+            self.add(message, "input")
+            self._queue = Queue()
 
-        # Blocks until input from keypress, which is
-        # possible since we start the module view in it's own thread.
-        return self._queue.get()
+            # Blocks until input from keypress, which is
+            # possible since we start the module view in it's own thread.
+            return self._queue.get()
 
     def keypress(self, size, key):
         """Keypress events."""
