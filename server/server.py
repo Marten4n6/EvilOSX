@@ -104,19 +104,18 @@ class _ModulePrompt(urwid.Pile):
         :param message The prompt message to display to the user.
         :type message str
         """
-        with self._lock:
-            if self.previous_prompt:
-                # Clear the previous prompt.
-                self.cleanup()
-            else:
-                self.previous_prompt = True
+        if self.previous_prompt:
+            # Clear the previous prompt.
+            self.cleanup()
+        else:
+            self.previous_prompt = True
 
-            self.add(message, "input")
-            self._queue = Queue()
+        self.add(message, "input")
+        self._queue = Queue()
 
-            # Blocks until input from keypress, which is
-            # possible since we start the module view in it's own thread.
-            return self._queue.get()
+        # Blocks until input from keypress, which is
+        # possible since we start the module view in it's own thread.
+        return self._queue.get()
 
     def keypress(self, size, key):
         """Keypress events."""
