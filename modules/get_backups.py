@@ -1,13 +1,16 @@
-class Module:
-    def __init__(self):
-        self.info = {
+from modules.helpers import ModuleABC
+
+
+class Module(ModuleABC):
+    def get_info(self):
+        return {
             "Author": ["Marten4n6"],
             "Description": "Shows a list of devices backed up by iTunes.",
             "References": [],
             "Task": False
         }
 
-    def setup(self, module_view, output_view, successful):
+    def setup(self, module_input, view, successful):
         successful.put(True)
 
     def run(self):

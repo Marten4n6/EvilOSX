@@ -1,12 +1,15 @@
-class Launcher:
-    def __init__(self):
-        self.info = {
+from launchers.helpers import LauncherABC
+
+
+class Launcher(LauncherABC):
+    def get_info(self):
+        return {
             "Author": ["Marten4n6"],
             "Description": "Creates a manual launcher.",
             "References": [],
         }
 
-    def generate(self, stager):
+    def generate(self, stager: str):
         return ("", """\
-        %s
-        """ % stager)
+        {}
+        """.format(stager))

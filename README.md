@@ -29,10 +29,10 @@
 - Multi-threaded
 - No client dependencies (pure python)
 - Persistent
-- Simple extendable [module](https://github.com/Marten4n6/EvilOSX/blob/master/modules/template.py) system
+- Simple extendable [module](https://github.com/Marten4n6/EvilOSX/blob/master/modules) system
 - Retrieve Chrome passwords
 - Retrieve iCloud tokens and contacts
-- [Phish](https://en.wikipedia.org/wiki/Phishing) for iCloud passwords via iTunes
+- [Phish](https://i.imgur.com/x3ilHQi.png) for iCloud passwords via iTunes
 - Download and upload files
 - Take a picture using the webcam
 - iTunes iOS backup enumeration
@@ -42,10 +42,11 @@
 - Auto installer, simply run EvilOSX on your target and the rest is handled automatically
 
 ## How To Use
+The server side requires [python3](https://www.python.org/downloads) to run (probably already installed on your system).
 
 ```bash
 # Install urwid (required for the server GUI)
-$ sudo pip install urwid
+$ sudo pip3 install urwid
 
 # Clone or download this repository
 $ git clone https://github.com/Marten4n6/EvilOSX
@@ -53,17 +54,18 @@ $ git clone https://github.com/Marten4n6/EvilOSX
 # Go into the repository
 $ cd EvilOSX
 
-# Build EvilOSX which runs on your target
+# Build a launcher to infect your target
 $ python builder.py
 
 # Start listening for connections
-$ python server/server.py
+$ python start.py
 
-# Lastly, run the built EvilOSX on your target.
+# Lastly, run the built launcher on your target
 ```
 **Because payloads are created unique to the target system (automatically by the server), the server must be running when any client connects for the first time.**
 
-![](https://i.imgur.com/IImALFV.png)
+# Screenshots
+![](https://i.imgur.com/eHHcowd.png)
 ![](https://i.imgur.com/lC8XtlJ.png)
 
 ## Motivation

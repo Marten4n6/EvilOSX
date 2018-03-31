@@ -1,15 +1,16 @@
-class Module:
-    """This module retrieves basic information about the client."""
+from modules.helpers import ModuleABC
 
-    def __init__(self):
-        self.info = {
+
+class Module(ModuleABC):
+    def get_info(self):
+        return {
             "Author": ["Marten4n6"],
             "Description": "Retrieves basic information about the client.",
             "References": [],
             "Task": False
         }
 
-    def setup(self, module_view, output_view, successful):
+    def setup(self, module_input, view, successful):
         successful.put(True)
 
     def run(self):

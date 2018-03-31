@@ -1,6 +1,20 @@
-"""Boilerplate code used by launchers."""
+from abc import ABCMeta, abstractclassmethod
 import random
 import string
+
+
+class LauncherABC(metaclass=ABCMeta):
+    """Launcher abstract base class."""
+
+    @abstractclassmethod
+    def get_info(self) -> dict:
+        """:return A dictionary containing information about this launcher."""
+        pass
+
+    @abstractclassmethod
+    def generate(self, stager: str) -> tuple:
+        """Creates the launcher which will run the stager."""
+        pass
 
 
 def random_string(size=None, numbers=False):
