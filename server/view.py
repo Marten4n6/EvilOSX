@@ -77,6 +77,7 @@ class ViewABC(metaclass=ABCMeta):
         """:return The class used by modules to interact with the user."""
         pass
 
+    @abstractclassmethod
     def get_output_view(self) -> OutputViewABC:
         """:return The class used by modules to output messages."""
         pass
