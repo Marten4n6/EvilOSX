@@ -35,6 +35,7 @@
 - [Phish](https://i.imgur.com/x3ilHQi.png) for iCloud passwords via iTunes
 - Download and upload files
 - Take a picture using the webcam
+- Record microphone input
 - iTunes iOS backup enumeration
 - Retrieve or monitor the clipboard
 - Retrieve browser history (Chrome and Safari)
