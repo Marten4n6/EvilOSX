@@ -99,7 +99,11 @@ class Module(ModuleABC):
         output_name = os.path.basename(self.download_file)
         output_file = os.path.join(self.output_folder, output_name)
 
-        str_response = response.decode()
+        try:
+            str_response = response.decode()
+        except UnicodeDecodeError:
+            # Not a string, thanks python3...
+            str_response = ""
 
         if "Failed to download" in str_response:
             view.output(str_response, "attention")
@@ -132,8 +136,9 @@ class Module(ModuleABC):
             try:
                 hash_command = program + " " + os.path.realpath(file_path)
                 process = subprocess.Popen(hash_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, stderr = process.communicate()
 
                 # MD5 regex for the win.
-                return re.findall(r"([a-fA-F\d]{32})", (process.stdout.readline() + process.stderr.readline()))[0]
+                return re.findall(r"([a-fA-F\d]{32})", (stdout.decode() + stderr.decode()))[0]
             except IndexError:
                 continue
