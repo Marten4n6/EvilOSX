@@ -1,7 +1,6 @@
 from modules.helpers import ModuleABC
 import os
-import subprocess
-import re
+from Cryptodome.Hash import MD5
 
 
 class Module(ModuleABC):
@@ -130,15 +129,13 @@ class Module(ModuleABC):
 
     @staticmethod
     def _get_file_hash(file_path):
-        md5_programs = ["md5sum", "md5"]  # Tested on Linux and Mac (lol @ Windows)
+        result = MD5.new()
 
-        for program in md5_programs:
-            try:
-                hash_command = program + " " + os.path.realpath(file_path)
-                process = subprocess.Popen(hash_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                stdout, stderr = process.communicate()
+        with open(file_path, "rb") as input_file:
+            while True:
+                data = input_file.read(4096)
 
-                # MD5 regex for the win.
-                return re.findall(r"([a-fA-F\d]{32})", (stdout.decode() + stderr.decode()))[0]
-            except IndexError:
-                continue
+                if not data:
+                    break
+                result.update(data)
+        return result.hexdigest()

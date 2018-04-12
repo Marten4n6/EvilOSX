@@ -1,0 +1,2 @@
+urwid
+pycryptodomex

