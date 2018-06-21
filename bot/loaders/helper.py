@@ -6,9 +6,9 @@ from abc import ABCMeta, abstractmethod
 import random
 import string
 
-MESSAGE_INPUT = "\033[1m" + "[?] " + "\033[0m"
-MESSAGE_INFO = "\033[94m" + "[I] " + "\033[0m"
-MESSAGE_ATTENTION = "\033[91m" + "[!] " + "\033[0m"
+MESSAGE_INPUT = "[\033[1m?\033[0m] "
+MESSAGE_INFO = "[\033[94mI\033[0m] "
+MESSAGE_ATTENTION = "[\033[91m!\033[0m] "
 
 
 def random_string(size: int = random.randint(6, 15), numbers: bool = False) -> str:
