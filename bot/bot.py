@@ -3,7 +3,7 @@
 """Minimal bot which loads modules as they are needed from the server."""
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "4.0.0"
+__version__ = "4.0.1"
 
 import getpass
 import json
