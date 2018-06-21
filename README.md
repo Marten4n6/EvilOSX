@@ -63,8 +63,8 @@ $ python3 start.py
 **Because payloads are created unique to the target system (automatically by the server), the server must be running when any bot connects for the first time.**
 
 ## Screenshots
-![](https://i.imgur.com/eHHcowd.png)
-![](https://i.imgur.com/lC8XtlJ.png)
+![](https://i.imgur.com/kRHrDWI.png)
+![](https://i.imgur.com/SpDPOUv.png)
 
 ## Motivation
 This project was created to be used with my [Rubber Ducky](https://hakshop.com/products/usb-rubber-ducky-deluxe), here's the simple script:
