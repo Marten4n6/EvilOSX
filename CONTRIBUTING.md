@@ -12,7 +12,7 @@ Modules are split up into two files.
 
 ### Server
 For this example we're going to create a simple module which says "Hello world!" to the bot (via text to speech). <br/>
-The first file should be under the [server]() directory (I called mine **say.py**).
+The first file should be under the [server](https://github.com/Marten4n6/EvilOSX/tree/master/server/modules/server) directory (I called mine **say.py**).
 
 We can use this to get information, setup and process the response of a module. <br/>
 This file will be automatically picked up by the server if we follow the rules specified in the ModuleABC class. <br/>
@@ -53,18 +53,18 @@ Now this module will be picked up by the server (you can see this by starting th
 ### Bot
 Now let's make our module actually do something...
 
-The second file should be under the [bot]() directory and be called the same as the server side. <br/>
+The second file should be under the [bot](https://github.com/Marten4n6/EvilOSX/tree/master/server/modules/bot) directory and be called the same as the server side. <br/>
 Every module must contain the following function:
 ```python
 def run(options):
     # This is the required starting point of every module.
     pass
  ```
-The optional dictionary returned by the setup function (of the first file) is passed to this function. <br/>
+The optional dictionary returned by the setup method (of the first file) is passed to this function. <br/>
 It's useful to know that this dictionary always contains the following keys: <br/>
 ```"server_host", "server_port", "program_directory"```
 
-Anything printed by a module will directly be returned to the server's ```process_response``` method. <br/>
+Anything printed by a module will **directly** be returned to the server's ```process_response``` method. <br/>
 Optionally, the dictionary returned by the server's ```setup``` method may have a "response_options" key which is then also sent back to this function.
 
 Here's the bot side of our example:
@@ -78,3 +78,6 @@ def run(options):
     subprocess.call("say '%s'" % message, shell=True)
     print("Say module finished!")
 ```
+
+##
+Feel free to submit an [issue](https://github.com/Marten4n6/EvilOSX/issues) if you have any further questions.
