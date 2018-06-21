@@ -1,7 +1,5 @@
-builds/
-output/
-EvilOSX.db
-server.cert
-server.key
+data/builds/*
+data/output/*
+data/EvilOSX.db
 .idea/
 *.pyc

