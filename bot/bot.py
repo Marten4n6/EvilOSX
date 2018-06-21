@@ -257,7 +257,7 @@ def main():
     last_active = time()  # The last time a command was requested from the server.
     idle = False
 
-    log.info("Starting EvilOSX v{}...", __version__)
+    log.info("Starting EvilOSX v%s...", __version__)
 
     while True:
         try:
