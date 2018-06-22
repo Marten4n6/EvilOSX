@@ -39,8 +39,9 @@
 - Attempt to get root via local privilege escalation
 
 ## How To Use
-The server side requires [python3](https://www.python.org/downloads) to run (probably already installed on your system). <br/>
-Once this is installed, open a terminal and type the following:
+The **server** side requires [python3](https://www.python.org/downloads) to run. <br/>
+The **bot** side is written in python2 which is already installed on macOS / OS X. <br/>
+Once python3 is installed, open a terminal and type the following:
 
 ```bash
 # Clone or download this repository
