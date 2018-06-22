@@ -40,7 +40,7 @@
 
 ## How To Use
 The **server** side requires [python3](https://www.python.org/downloads) to run. <br/>
-The **bot** side is written in python2 which is already installed on macOS / OS X. <br/>
+The **bot** side is written in python2 which is already installed on macOS / OS X. <br/><br/>
 Once python3 is installed, open a terminal and type the following:
 
 ```bash
@@ -64,7 +64,7 @@ $ python3 start.py
 **Because payloads are created unique to the target system (automatically by the server), the server must be running when any bot connects for the first time.**
 
 ## Screenshots
-![](https://i.imgur.com/kRHrDWI.png)
+![](https://i.imgur.com/BE24YPB.png)
 ![](https://i.imgur.com/SpDPOUv.png)
 
 ## Motivation
