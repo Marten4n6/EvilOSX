@@ -43,8 +43,13 @@ def setup():
 
 
 def main():
-    print(BANNER)
     setup()
+
+    try:
+        print(BANNER)
+    except UnicodeEncodeError:
+        # Thrown on my Raspberry PI (via SSH).
+        print(MESSAGE_ATTENTION + "Failed to print fancy banner, skipping...")
 
     while True:
         try:
