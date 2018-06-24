@@ -81,3 +81,6 @@ def print_chrome_history(history_limit, output_file):
 def run(options):
     print_safari_history(options["history_limit"], options["output_file"])
     print_chrome_history(options["history_limit"], options["output_file"])
+
+    if options["output_file"]:
+        print("[browser_history] History saved to: " + options["output_file"])
