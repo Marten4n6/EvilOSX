@@ -103,8 +103,9 @@ class Controller:
                         self._view.output("Showing bots on page {}.".format(page_number), "info")
 
                         for i, bot in enumerate(bots):
-                            self._view.output("{} = \"{}@{}\"".format(
-                                str(skip_amount + i), bot.username, bot.hostname
+                            self._view.output("{} = \"{}@{}\" (last seen: {})".format(
+                                str(i), bot.username, bot.hostname,
+                                strftime("%a, %b %d @ %H:%M:%S", localtime(bot.last_online))
                             ))
                 except ValueError:
                     self._view.output("Invalid page number.", "attention")
