@@ -28,7 +28,7 @@ def print_safari_history(history_limit, output_file):
                 string_builder += "Safari history: \n"
 
                 for item in statement[number:]:
-                    string_builder += item
+                    string_builder += " -> ".join(item)
                     string_builder += "\n"
             else:
                 with open(output_file, "a+") as out:
