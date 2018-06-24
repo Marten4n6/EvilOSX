@@ -6,4 +6,4 @@ See https://semver.org
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
-VERSION = "4.1.6"
+VERSION = "4.1.7"

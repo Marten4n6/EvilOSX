@@ -227,6 +227,8 @@ class View(ViewABC):
         self._output_view = OutputView()
         self._command_input = CommandInput()
 
+        self._main_loop = None
+
         # Initialize the frame.
         self._frame = urwid.Frame(
             header=urwid.AttrWrap(self._header, "reversed"),
@@ -256,9 +258,11 @@ class View(ViewABC):
 
     def set_header_text(self, text: str):
         self._header.set_text(text)
+        self._async_reload()
 
     def set_footer_text(self, text: str):
         self._command_input.set_header_text(text)
+        self._async_reload()
 
     def clear(self):
         self._output_view.clear()
@@ -266,6 +270,15 @@ class View(ViewABC):
     def start(self):
         main_loop = urwid.MainLoop(self._frame, self._PALETTE, handle_mouse=True)
 
+        self._set_main_loop(main_loop)
         self._output_view.set_main_loop(main_loop)
         self._command_input.set_main_loop(main_loop)
         main_loop.run()
+
+    def _set_main_loop(self, main_loop):
+        self._main_loop = main_loop
+
+    def _async_reload(self):
+        # Required if this method is called from a different thread asynchronously.
+        if self._main_loop and self._main_loop != current_thread():
+            self._main_loop.draw_screen()
