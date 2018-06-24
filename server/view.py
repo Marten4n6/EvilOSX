@@ -177,11 +177,10 @@ class CommandInput(urwid.Pile):
             self._async_reload()
 
     def get_prompt_input(self) -> str:
-        with self._lock:
-            self._prompt_mode = True
+        self._prompt_mode = True
 
-            # Wait for user input.
-            return self._prompt_queue.get()
+        # Wait for user input.
+        return self._prompt_queue.get()
 
     def keypress(self, size, key):
         if key == "enter":
