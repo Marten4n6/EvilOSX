@@ -4,7 +4,7 @@
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
-from os import path, mkdir
+from os import path, mkdir, remove
 
 from server.controller import Controller
 from server.model import Model
@@ -36,10 +36,15 @@ def setup():
         path.join(DATA_DIRECTORY, "builds"),
         path.join(DATA_DIRECTORY, "output")
     ]
+    database_path = path.join(DATA_DIRECTORY, "EvilOSX.db")
 
     for directory in directories:
         if not path.exists(directory):
             mkdir(directory)
+
+    if path.exists(database_path):
+        # For if we make any changes to the database (model).
+        remove(path.join(DATA_DIRECTORY, "EvilOSX.db"))
 
 
 def main():

