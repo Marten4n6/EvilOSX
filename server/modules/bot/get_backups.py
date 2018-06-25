@@ -3,9 +3,7 @@ __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
 import subprocess
-from glob import glob
-
-BACKUP_PATHS = glob("/Users/*/Library/Application Support/MobileSync/Backup/*/Info.plist")
+from os import listdir, path
 
 
 def run_command(command):
@@ -20,11 +18,14 @@ def run_command(command):
 
 
 def run(options):
-    if len(BACKUP_PATHS) > 0:
-        string_builder = "Looking for backups..."
+    base_path = "/Users/%s/Library/Application Support/MobileSync/Backup/" % run_command("whoami")
+    backup_paths = listdir(base_path)
 
-        for i, path in enumerate(BACKUP_PATHS):
-            string_builder += "Device: " + str(i + 1)
+    if len(backup_paths) > 0:
+        string_builder = "Looking for backups...\n"
+
+        for i, backup_path in enumerate(backup_paths):
+            string_builder += "[+] Device: " + str(i + 1) + "\n"
 
             plist_keys = [
                 "Product Name",
@@ -38,8 +39,13 @@ def run(options):
                 "iTunes Version"
             ]
 
+            backup_path = path.join(base_path, backup_path, "Info.plist").replace(" ", "\\ ")
+
             for key in plist_keys:
-                string_builder += key + ": " + \
-                                  run_command("/usr/libexec/PlistBuddy -c 'Print : \" %s\"' %s" % (key, path))
+                string_builder += "%s: %s\n" % (
+                    key, run_command("/usr/libexec/PlistBuddy -c 'Print :\"%s\"' %s" % (key, backup_path))
+                )
+
+        print string_builder
     else:
         print "No local backups found."
