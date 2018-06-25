@@ -9,7 +9,7 @@ from textwrap import dedent
 class Launcher(LauncherABC):
     def generate(self, stager: str) -> tuple:
         return ("py", dedent("""\
-        #!/usr/bin/env python
+        #!/usr/bin/python
         # -*- coding: utf-8 -*-
         import subprocess
         
