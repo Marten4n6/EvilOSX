@@ -75,3 +75,13 @@ def get_remove_code(loader_name: str) -> bytes:
         code = input_file.read()
 
     return compress(code)
+
+
+def get_update_code(loader_name: str) -> bytes:
+    """:return: Compressed code which can be run on the bot."""
+    source_path = path.realpath(path.join(path.dirname(__file__), loader_name, "update.py"))
+
+    with open(source_path, "rb") as input_file:
+        code = input_file.read()
+
+    return compress(code)
