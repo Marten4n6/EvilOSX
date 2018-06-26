@@ -27,19 +27,23 @@ def random_string(size: int = random.randint(6, 15), numbers: bool = False) -> s
 class ModuleABC(metaclass=ABCMeta):
     """Abstract base class for modules."""
 
+    def __init__(self, view, model):
+        self._view = view
+        self._model = model
+
     @abstractmethod
     def get_info(self) -> dict:
         """:return: A dictionary containing basic information about this module."""
         pass
 
-    def setup(self, view) -> Tuple[bool, Optional[dict]]:
+    def setup(self) -> Tuple[bool, Optional[dict]]:
         """Interacts with the user, used to set configuration options.
 
         :return: A tuple containing a "was the setup successful" boolean and configuration options (which may be None).
         """
         return True, None
 
-    def process_response(self, response: bytes, view, response_options: dict):
+    def process_response(self, response: bytes, response_options: dict):
         """Processes the module's response."""
-        view.output_separator()
-        view.output(response)
+        self._view.output_separator()
+        self._view.output(response)

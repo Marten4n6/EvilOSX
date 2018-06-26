@@ -17,15 +17,15 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self, view) -> Tuple[bool, Optional[dict]]:
-        target = view.prompt("Target to attack (example: fbi.gov:443): ", [
+    def setup(self) -> Tuple[bool, Optional[dict]]:
+        target = self._view.prompt("Target to attack (example: fbi.gov:443): ", [
             ("This attack only works on Apache 1x, 2x, dhttpd, and some other minor servers.", "attention"),
             ("Servers like nginx are not vulnerable to this form of attack.", "attention"),
             ("If no port is specified 80 will be used.", "info")
         ])
 
         if not target:
-            view.output("Cancelled.", "attention")
+            self._view.output("Cancelled.", "attention")
             return False, None
         else:
             return True, {

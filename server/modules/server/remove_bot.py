@@ -14,8 +14,8 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self, view) -> Tuple[bool, Optional[dict]]:
-        confirm = view.prompt("Are you sure you want to continue [y/N]: ", (
+    def setup(self) -> Tuple[bool, Optional[dict]]:
+        confirm = self._view.prompt("Are you sure you want to continue [y/N]: ", (
             "You are about to remove EvilOSX from the bot(s).", "attention"
         )).lower()
 

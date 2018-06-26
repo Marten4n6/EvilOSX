@@ -17,10 +17,10 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self, view) -> Tuple[bool, Optional[dict]]:
-        record_time = view.prompt("Time in seconds to record [ENTER for 5]: ")
-        output_dir = view.prompt("Remote output directory [ENTER for /tmp]: ")
-        output_name = view.prompt("Remote output name [ENTER for <RANDOM>]: ")
+    def setup(self) -> Tuple[bool, Optional[dict]]:
+        record_time = self._view.prompt("Time in seconds to record [ENTER for 5]: ")
+        output_dir = self._view.prompt("Remote output directory [ENTER for /tmp]: ")
+        output_name = self._view.prompt("Remote output name [ENTER for <RANDOM>]: ")
 
         if not record_time:
             record_time = 5

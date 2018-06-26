@@ -16,13 +16,13 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self, view) -> Tuple[bool, Optional[dict]]:
-        confirm = view.prompt("Are you sure you want to continue? [Y/n]: ", [
+    def setup(self) -> Tuple[bool, Optional[dict]]:
+        confirm = self._view.prompt("Are you sure you want to continue? [Y/n]: ", [
             ("This will prompt the bot to allow keychain access.", "attention")
         ]).lower()
 
         if not confirm or confirm == "y":
             return True, None
         else:
-            view.output("Cancelled.", "info")
+            self._view.output("Cancelled.", "info")
             return False, None

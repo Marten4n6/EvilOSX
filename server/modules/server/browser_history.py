@@ -14,9 +14,9 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self, view) -> Tuple[bool, Optional[dict]]:
-        history_limit = view.prompt("History limit [ENTER for 10]: ")
-        output_file = view.prompt("Would you like to output to a file? [y/N]").lower()
+    def setup(self) -> Tuple[bool, Optional[dict]]:
+        history_limit = self._view.prompt("History limit [ENTER for 10]: ")
+        output_file = self._view.prompt("Would you like to output to a file? [y/N]").lower()
 
         if not history_limit:
             history_limit = 10
@@ -26,7 +26,7 @@ class Module(ModuleABC):
             output_file = "/tmp/{}.txt".format(random_string(8))
 
         if not str(history_limit).isdigit():
-            view.output("Invalid history limit.", "attention")
+            self._view.output("Invalid history limit.", "attention")
             return False, None
         else:
             return True, {

@@ -14,10 +14,10 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self, view) -> Tuple[bool, Optional[dict]]:
+    def setup(self) -> Tuple[bool, Optional[dict]]:
         # todo: Logic for checking if the version breaks backwards compatibility, if so error out.
 
-        confirm = view.prompt("Are you sure you want to continue [y/N]: ", (
+        confirm = self._view.prompt("Are you sure you want to continue [y/N]: ", (
             "You are about to update the bot to the latest (local) version.", "attention"
         )).lower()
 

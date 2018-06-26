@@ -16,21 +16,21 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self, view) -> Tuple[bool, Optional[dict]]:
-        download_file = view.prompt("Path to file or directory on the bot's machine: ")
-        buffer_size = view.prompt("Buffer size [ENTER for 4096 bytes]: ")
-        output_name = view.prompt("Local output name [ENTER for <RANDOM>]: ")
+    def setup(self) -> Tuple[bool, Optional[dict]]:
+        download_file = self._view.prompt("Path to file or directory on the bot's machine: ")
+        buffer_size = self._view.prompt("Buffer size [ENTER for 4096 bytes]: ")
+        output_name = self._view.prompt("Local output name [ENTER for <RANDOM>]: ")
 
         if not buffer_size:
             buffer_size = 4096
         if type(buffer_size) is not int:
-            view.output("Invalid buffer size, using 4096.", "info")
+            self._view.output("Invalid buffer size, using 4096.", "info")
             buffer_size = 4096
         if not output_name:
             output_name = random_string(8) + path.splitext(download_file)[1]
 
         if path.exists(path.join(OUTPUT_DIRECTORY, path.basename(download_file))):
-            view.output("A file with that name already exists!", "attention")
+            self._view.output("A file with that name already exists!", "attention")
             return False, None
         else:
             return True, {
@@ -41,7 +41,7 @@ class Module(ModuleABC):
                 }
             }
 
-    def process_response(self, response: bytes, view, response_options: dict):
+    def process_response(self, response: bytes, response_options: dict):
         # Files are sent back to us in small pieces (encoded with base64),
         # we simply decode these pieces and write them to the output file.
         output_name = response_options["output_name"]
@@ -53,19 +53,19 @@ class Module(ModuleABC):
             str_response = ""
 
         if "Failed to download" in str_response:
-            view.output(str_response, "attention")
+            self._view.output(str_response, "attention")
         elif "Compressing directory" in str_response:
-            view.output(str_response, "info")
+            self._view.output(str_response, "info")
         elif "Stopped" in str_response:
-            view.output(str_response, "info")
+            self._view.output(str_response, "info")
         elif "Started" in str_response:
             md5_hash = str_response.split("|")[1]
 
-            view.output("Started downloading: \"{}\"...".format(output_name))
-            view.output("Remote MD5 file hash: {}".format(md5_hash))
+            self._view.output("Started downloading: \"{}\"...".format(output_name))
+            self._view.output("Remote MD5 file hash: {}".format(md5_hash))
         elif "Finished" in str_response:
-            view.output("Local MD5 file hash (MUST MATCH!): {}".format(self._get_file_hash(output_file)))
-            view.output("Finished file download, saved to: {}".format(output_file))
+            self._view.output("Local MD5 file hash (MUST MATCH!): {}".format(self._get_file_hash(output_file)))
+            self._view.output("Finished file download, saved to: {}".format(output_file))
         else:
             with open(output_file, "ab") as output_file:
                 output_file.write(response)

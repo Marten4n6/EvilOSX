@@ -129,9 +129,12 @@ class Controller:
 
             for module_name in modules.get_names():
                 try:
-                    info = modules.get_info(module_name)
+                    module = modules.get_module(module_name)
 
-                    self._view.output("{:16} -  {}".format(module_name, info["Description"]))
+                    if not module:
+                        module = modules.load_module(module_name, self._view, self._model)
+
+                    self._view.output("{:16} -  {}".format(module_name, module.get_info()["Description"]))
                 except AttributeError as ex:
                     self._view.output(str(ex), "attention")
         elif command.startswith("useall"):
@@ -206,7 +209,12 @@ class Controller:
                 ), "info")
         else:
             try:
-                successful, options = modules.get_options(module_name, self._view)
+                module = modules.get_module(module_name)
+
+                if not module:
+                    module = modules.load_module(module_name, self._view, self._model)
+
+                successful, options = module.setup()
 
                 if not successful:
                     self._view.output("Module setup failed or cancelled.", "attention")
@@ -358,7 +366,8 @@ class BotController(BaseHTTPRequestHandler):
 
         if module_name:
             try:
-                modules.send_response(module_name, response, self._view, response_options)
+                # Modules will already be loaded at this point.
+                modules.get_module(module_name).process_response(response, response_options)
             except Exception as ex:
                 # Something went wrong in the process_response method.
                 self._view.output_separator()
