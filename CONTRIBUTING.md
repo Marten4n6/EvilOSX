@@ -30,14 +30,14 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self, view) -> Tuple[bool, Optional[dict]]:
+    def setup(self) -> Tuple[bool, Optional[dict]]:
         """This is called by the server before the module is run.
 
          Here you can setup configuration options by interacting with the user.
          In this example we'll prompt the user for the message they want
          text to speech to speak to the bot.
          """
-        message = view.prompt("Message to speak [ENTER for \"Hello world!\"]: ")
+        message = self._view.prompt("Message to speak [ENTER for \"Hello world!\"]: ")
 
         if not message:  # The user pressed enter, set the default.
             message = "Hello world!"
