@@ -38,7 +38,7 @@ def get_model():
 
 def get_wifi():
     command = "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I | grep -w SSID"
-    return run_command(command).split("SSID: ")[1]
+    return run_command(command).replace("SSID: ", "").strip()
 
 
 def get_battery():
