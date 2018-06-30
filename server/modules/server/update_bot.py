@@ -15,13 +15,5 @@ class Module(ModuleABC):
         }
 
     def setup(self) -> Tuple[bool, Optional[dict]]:
-        # todo: Logic for checking if the version breaks backwards compatibility, if so error out.
-
-        confirm = self._view.prompt("Are you sure you want to continue [y/N]: ", (
-            "You are about to update the bot to the latest (local) version.", "attention"
-        )).lower()
-
-        if not confirm or confirm == "n":
-            return False, None
-        else:
-            return True, None
+        self._view.output("This feature hasn't been implemented yet!", "attention")
+        return False, None
