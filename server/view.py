@@ -4,7 +4,7 @@ __license__ = "GPLv3"
 
 from abc import ABCMeta, abstractmethod
 from queue import Queue
-from threading import Lock, RLock
+from threading import Lock
 from threading import current_thread
 
 import urwid
@@ -78,7 +78,7 @@ class OutputView(OutputViewABC):
         self._max_size = max_size
 
         self._output_view = urwid.ListBox(urwid.SimpleListWalker([]))
-        self._lock = RLock()
+        self._lock = Lock()
 
         self._main_loop = None
 
@@ -117,10 +117,9 @@ class OutputView(OutputViewABC):
             self._async_reload()
 
     def _async_reload(self):
-        with self._lock:
-            # Required if this method is called from a different thread asynchronously.
-            if self._main_loop and self._main_loop != current_thread():
-                self._main_loop.draw_screen()
+        # Required if this method is called from a different thread asynchronously.
+        if self._main_loop and self._main_loop != current_thread():
+            self._main_loop.draw_screen()
 
 
 class CommandInput(urwid.Pile):
@@ -133,7 +132,7 @@ class CommandInput(urwid.Pile):
         self._output_list = urwid.ListBox(urwid.SimpleFocusListWalker([]))
         self._output_layout = urwid.BoxAdapter(self._output_list, 0)  # Dynamically change size.
 
-        self._lock = RLock()
+        self._lock = Lock()
         self._prompt_mode = False
         self._prompt_queue = Queue()
 
@@ -203,10 +202,9 @@ class CommandInput(urwid.Pile):
             urwid.Edit.keypress(self._edit_box, size, key)
 
     def _async_reload(self):
-        with self._lock:
-            # Required if this method is called from a different thread asynchronously.
-            if self._main_loop and self._main_loop != current_thread():
-                self._main_loop.draw_screen()
+        # Required if this method is called from a different thread asynchronously.
+        if self._main_loop and self._main_loop != current_thread():
+            self._main_loop.draw_screen()
 
 
 class View(ViewABC):
