@@ -4,6 +4,7 @@
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
+from argparse import ArgumentParser
 from os import path, mkdir, remove
 
 from server.controller import Controller
@@ -56,12 +57,19 @@ def main():
         # Thrown on my Raspberry PI (via SSH).
         print(MESSAGE_ATTENTION + "Failed to print fancy banner, skipping...")
 
-    while True:
-        try:
-            server_port = int(input(MESSAGE_INPUT + "Server port to listen on: "))
-            break
-        except ValueError:
-            continue
+    parser = ArgumentParser()
+    parser.add_argument("-p", "--port", help="server port to listen on", type=int)
+    arguments = parser.parse_args()
+    
+    if arguments.port:
+        server_port = arguments.port
+    else:
+        while True:
+            try:
+                server_port = int(input(MESSAGE_INPUT + "Server port to listen on: "))
+                break
+            except ValueError:
+                continue
 
     model = Model()
     view = View()
