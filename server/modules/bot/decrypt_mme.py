@@ -203,8 +203,13 @@ def run(options):
             for t_type, t_value in token_plist["tokens"].items():
                 string_builder += "[+] %s: %s\n" % (t_type, t_value)
                 string_builder += "    Creation time: %s\n" % (get_generation_time(t_value))
+            
+            token_dict = dict(token_plist["tokens"])
+            token_dict["fullName"] = token_plist["appleAccountInfo"]["fullName"]
+            token_dict["primaryEmail"] = token_plist["appleAccountInfo"]["primaryEmail"]
+            token_dict["dsid"] = token_plist["appleAccountInfo"]["dsPrsID"]
 
-            output_file.write(json.dumps(token_plist["tokens"].items()))
+            output_file.write(json.dumps(token_dict))
             string_builder += "Tokens saved to: %s\n" % token_output
 
     print(string_builder)
