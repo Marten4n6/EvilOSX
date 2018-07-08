@@ -25,7 +25,7 @@ class Module(ModuleABC):
         elif output_file:
             output_file = "/tmp/{}.txt".format(random_string(8))
 
-        if not str(history_limit).isdigit():
+        if not isinstance(history_limit, int):
             self._view.output("Invalid history limit.", "attention")
             return False, None
         else:

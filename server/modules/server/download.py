@@ -23,14 +23,14 @@ class Module(ModuleABC):
 
         if not buffer_size:
             buffer_size = 4096
-        if type(buffer_size) is not int:
+        elif type(buffer_size) is not int:
             self._view.output("Invalid buffer size, using 4096.", "info")
             buffer_size = 4096
         if not output_name:
             output_name = random_string(8) + path.splitext(download_file)[1]
 
         if path.exists(path.join(OUTPUT_DIRECTORY, path.basename(download_file))):
-            self._view.output("A file with that name already exists!", "attention")
+            self._view.output("A local file with that name already exists!", "attention")
             return False, None
         else:
             return True, {

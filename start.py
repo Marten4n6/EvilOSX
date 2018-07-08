@@ -11,7 +11,7 @@ from server.controller import Controller
 from server.model import Model
 from server.modules.helper import DATA_DIRECTORY
 from server.version import VERSION
-from server.view import View
+from server.view.cli import ViewCLI
 
 BANNER = """\
 ▓█████ ██▒   █▓ ██▓ ██▓     ▒█████    ██████ ▒██   ██▒
@@ -72,11 +72,11 @@ def main():
                 continue
 
     model = Model()
-    view = View()
-    Controller(view, model, server_port)
+    view = ViewCLI()
+    controller = Controller(view, model, server_port)
 
-    # Start the view, blocks until exit.
-    view.start()
+    # Start the controller, blocks until exit.
+    controller.start()
 
     print(MESSAGE_INFO + "Feel free to submit any issues or feature requests on GitHub.")
     print(MESSAGE_INFO + "Goodbye!")

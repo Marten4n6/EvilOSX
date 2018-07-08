@@ -2,77 +2,16 @@
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
-from abc import ABCMeta, abstractmethod
 from queue import Queue
-from threading import Lock
-from threading import current_thread
+from threading import Lock, current_thread
 
 import urwid
 
-
-class OutputViewABC(metaclass=ABCMeta):
-    """Abstract base class for the output view."""
-
-    @abstractmethod
-    def add(self, line: str, style: str = ""):
-        """Adds a line to the output view."""
-        pass
-
-    @abstractmethod
-    def clear(self):
-        """Clears the output view."""
-        pass
+from server.view.helper import ViewABC
 
 
-class ViewABC(metaclass=ABCMeta):
-    """Abstract base class for views."""
-
-    @abstractmethod
-    def output(self, line: str, prefix: str = ""):
-        """Adds a line to the view."""
-        pass
-
-    @abstractmethod
-    def output_separator(self):
-        """Adds a separator to the view."""
-        pass
-
-    @abstractmethod
-    def prompt(self, prompt_text: str, lines: list = None) -> str:
-        """Prompts for user input, assumes the caller isn't on the main thread.
-
-        :param prompt_text: The prompt text shown to the user.
-        :param lines: A list of tuples containing each line and prefix.
-        """
-
-    @abstractmethod
-    def set_on_command(self, callback_function):
-        """Registers the command listener."""
-        pass
-
-    @abstractmethod
-    def set_header_text(self, text: str):
-        """Sets the header text."""
-        pass
-
-    @abstractmethod
-    def set_footer_text(self, text: str):
-        """Sets the footer text."""
-        pass
-
-    @abstractmethod
-    def clear(self):
-        """Clears the output view."""
-        pass
-
-    @abstractmethod
-    def start(self):
-        """Initializes the view."""
-        pass
-
-
-class OutputView(OutputViewABC):
-    """Default OutputABC implementation."""
+class _OutputView:
+    """This class shows the command output view."""
 
     def __init__(self, max_size: int = 69):
         self._max_size = max_size
@@ -122,7 +61,7 @@ class OutputView(OutputViewABC):
             self._main_loop.draw_screen()
 
 
-class CommandInput(urwid.Pile):
+class _CommandInput(urwid.Pile):
     """This class shows the command input view."""
     signals = ["line_entered"]
 
@@ -207,10 +146,10 @@ class CommandInput(urwid.Pile):
             self._main_loop.draw_screen()
 
 
-class View(ViewABC):
+class ViewCLI(ViewABC):
     """This class interacts with the user.
 
-    This is the default ViewABC implementation.
+    ViewABC implementation which shows a command line interface.
     The controller will register all listeners (set_on_*) for this view.
     """
 
@@ -224,8 +163,8 @@ class View(ViewABC):
         self._SEPARATOR = "-" * 5
 
         self._header = urwid.Text("")
-        self._output_view = OutputView()
-        self._command_input = CommandInput()
+        self._output_view = _OutputView()
+        self._command_input = _CommandInput()
 
         self._main_loop = None
 

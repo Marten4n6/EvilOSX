@@ -25,7 +25,6 @@ class Module(ModuleABC):
         ])
 
         if not target:
-            self._view.output("Cancelled.", "attention")
             return False, None
         else:
             return True, {

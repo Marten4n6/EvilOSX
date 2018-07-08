@@ -21,7 +21,7 @@ class Module(ModuleABC):
         if not monitor_time:
             monitor_time = 0
 
-        if not str(monitor_time).isdigit():
+        if not isinstance(monitor_time, int):
             self._view.output("Invalid monitor time (should be in seconds).", "attention")
             return False, None
         else:

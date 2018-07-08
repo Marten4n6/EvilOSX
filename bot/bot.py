@@ -23,14 +23,14 @@ import sys
 
 import urllib2
 
-# ============================================================
+# *************************************************************
 # These variables will be patched when this payload is created.
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 1337
 USER_AGENT = ""
 PROGRAM_DIRECTORY = ""
 LOADER_OPTIONS = {}
-# ============================================================
+# *************************************************************
 
 COMMAND_INTERVAL = 1  # Normal interval to check for commands.
 IDLE_INTERVAL = 30  # Interval to check for commands when idle.

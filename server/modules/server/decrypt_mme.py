@@ -24,5 +24,4 @@ class Module(ModuleABC):
         if not confirm or confirm == "y":
             return True, None
         else:
-            self._view.output("Cancelled.", "info")
             return False, None
