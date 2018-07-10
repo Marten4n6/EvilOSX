@@ -38,8 +38,8 @@ class Controller:
         self._view.output("Type \"help\" to show the help menu.", "info")
 
         self._register_listeners()
-        self._view.start()
         self._start_server()
+        self._view.start()
 
     def _register_listeners(self):
         """Registers the listeners fired by the view."""
