@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a href="https://github.com/Marten4n6/EvilOSX"><img src="https://i.imgur.com/qiAJP95.png" alt="EvilOSX" width="255"></a>
+  <a href="https://github.com/Marten4n6/EvilOSX"><img src="/data/images/logo.png?raw=true" alt="EvilOSX" width="280"></a>
   <br>
   EvilOSX
   <br>
