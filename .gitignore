@@ -1,5 +1,3 @@
-data/builds/*
-data/output/*
-data/EvilOSX.db
 .idea/
 *.pyc
+data/EvilOSX.db
