@@ -41,28 +41,25 @@ def run(options):
         audio_settings,
         objc.nil,
     )
-
-    # Bail if unable to create AVAudioRecorder
+    
     if error:
-        print "Unexpected error: " + error
-        NSLog(error)
-        sys.exit(1)
+        print "Unexpected error: " + str(error)
+    else:
+        # Record audio for x seconds
+        recorder.record()
 
-    # Record audio for x seconds
-    recorder.record()
+        for i in range(0, record_time):
+            try:
+                time.sleep(1)
+            except SystemExit:
+                # Kill task called.
+                print "Recording cancelled, " + str(i) + " seconds were left."
+                break
 
-    for i in range(0, record_time):
-        try:
-            time.sleep(1)
-        except SystemExit:
-            # Kill task called.
-            print "Recording cancelled, " + str(i) + " seconds were left."
-            break
+        recorder.stop()
 
-    recorder.stop()
+        del pool
 
-    del pool
-
-    # Done.
-    os.rename(output_path, output_path + ".mp3")
-    print "Finished recording, audio saved to: " + output_path + ".mp3"
+        # Done.
+        os.rename(output_path, output_path + ".mp3")
+        print "Finished recording, audio saved to: " + output_path + ".mp3"
