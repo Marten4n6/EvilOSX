@@ -9,7 +9,7 @@ from Foundation import *
 
 
 def run(options):
-    record_time = options["record_time"]
+    record_time = int(options["record_time"])
     output_dir = options["output_dir"]
     output_name = options["output_name"]
 
