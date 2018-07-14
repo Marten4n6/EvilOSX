@@ -47,11 +47,11 @@ Once python3 is installed, open a terminal and type the following:
 # Clone or download this repository
 $ git clone https://github.com/Marten4n6/EvilOSX
 
-# Install dependencies required by the server
-$ sudo pip3 install -r requirements.txt
-
 # Go into the repository
 $ cd EvilOSX
+
+# Install dependencies required by the server
+$ sudo pip3 install -r requirements.txt
 
 # Build a launcher to infect your target(s)
 $ python3 builder.py
