@@ -9,7 +9,7 @@ from datetime import datetime
 
 def run(options):
     elapsed_time = 0
-    monitor_time = options["monitor_time"]
+    monitor_time = int(options["monitor_time"])
     output_file = options["output_file"]
 
     previous = ""
