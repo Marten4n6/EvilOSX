@@ -14,6 +14,6 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self) -> Tuple[bool, Optional[dict]]:
-        self._view.output("This feature hasn't been implemented yet!", "attention")
+    def setup(self, set_options) -> Tuple[bool, Optional[dict]]:
+        self._view.display_error("This feature hasn't been implemented yet!")
         return False, None

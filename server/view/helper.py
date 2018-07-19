@@ -3,50 +3,27 @@ __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
 from abc import ABCMeta, abstractmethod
+from server.model import Bot
 
 
 class ViewABC(metaclass=ABCMeta):
-    """Abstract base class for views."""
+    """Abstract base class for views, used by the background server."""
 
     @abstractmethod
-    def output(self, line: str, prefix: str = ""):
-        """Adds a line to the view."""
+    def on_response(self, response: str):
+        """Called when a bot sends a response."""
         pass
 
     @abstractmethod
-    def output_separator(self):
-        """Adds a separator to the view."""
+    def on_bot_added(self, bot: Bot):
+        """Called when a bot connects for the first time."""
         pass
 
     @abstractmethod
-    def prompt(self, prompt_text: str, lines: list = None) -> str:
-        """Prompts for user input, assumes the caller isn't on the main thread.
-
-        :param prompt_text: The prompt text shown to the user.
-        :param lines: A list of tuples containing each line and prefix.
-        """
+    def on_bot_removed(self, bot: Bot):
+        """Called when a bot gets removed."""
 
     @abstractmethod
-    def set_on_command(self, callback_function):
-        """Registers the command listener."""
-        pass
-
-    @abstractmethod
-    def set_header_text(self, text: str):
-        """Sets the header text."""
-        pass
-
-    @abstractmethod
-    def set_footer_text(self, text: str):
-        """Sets the footer text."""
-        pass
-
-    @abstractmethod
-    def clear(self):
-        """Clears the output view."""
-        pass
-
-    @abstractmethod
-    def start(self):
-        """Initializes the view."""
+    def on_bot_path_change(self, bot: Bot):
+        """Called when the bot's local path changes."""
         pass

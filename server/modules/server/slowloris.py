@@ -17,14 +17,19 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self) -> Tuple[bool, Optional[dict]]:
-        target = self._view.prompt("Target to attack (example: fbi.gov:443): ", [
-            ("This attack only works on Apache 1x, 2x, dhttpd, and some other minor servers.", "attention"),
-            ("Servers like nginx are not vulnerable to this form of attack.", "attention"),
-            ("If no port is specified 80 will be used.", "info")
-        ])
+    def get_setup_messages(self) -> List[str]:
+        return [
+            "Target to attack (example: fbi.gov:443): "
+        ]
+
+    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+        # This attack only works on Apache 1x, 2x, dhttpd, and some other minor servers.
+        # Servers like nginx are not vulnerable to this form of attack.
+        # If no port is specified 80 will be used.
+        target = set_options[0]
 
         if not target:
+            self._view.display_error("Invalid target.")
             return False, None
         else:
             return True, {

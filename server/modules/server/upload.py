@@ -17,10 +17,17 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self) -> Tuple[bool, Optional[dict]]:
-        local_file = path.expanduser(self._view.prompt("Path to the local file to upload: "))
-        output_dir = self._view.prompt("Remote output directory [ENTER for /tmp]: ")
-        output_name = self._view.prompt("New file name [ENTER to skip]: ")
+    def get_setup_messages(self) -> List[str]:
+        return [
+            "Path to the local file to upload: ",
+            "Remote output directory (Leave empty for /tmp): ",
+            "New file name (Leave empty to skip): "
+        ]
+
+    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+        local_file = path.expanduser(set_options[0])
+        output_dir = set_options[1]
+        output_name = set_options[2]
 
         if not output_dir:
             output_dir = "/tmp"
@@ -28,15 +35,15 @@ class Module(ModuleABC):
             output_name = path.basename(local_file)
 
         if not path.exists(local_file):
-            self._view.output("Failed to find local file: {}".format(local_file), "attention")
+            self._view.display_error("Failed to find local file: {}".format(local_file), "attention")
             return False, None
         else:
             download_path = random_string(16)
 
             self._model.add_upload_file(download_path, local_file)
 
-            self._view.output("Started hosting the file at: /{}".format(download_path), "info")
-            self._view.output("This link will automatically expire after 60 seconds.", "attention")
+            self._view.output("Started hosting the file at: /{}".format(download_path))
+            self._view.output("This link will automatically expire after 60 seconds.")
 
             cleanup_thread = Thread(target=self._cleanup_thread, args=(download_path,))
             cleanup_thread.daemon = True

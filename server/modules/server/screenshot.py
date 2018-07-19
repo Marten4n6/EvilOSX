@@ -16,8 +16,13 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self) -> Tuple[bool, Optional[dict]]:
-        output_name = self._view.prompt("Local output name [ENTER for <RANDOM>]: ")
+    def get_setup_messages(self) -> List[str]:
+        return [
+            "Local output name (Leave empty for <RANDOM>): "
+        ]
+
+    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+        output_name = set_options[0]
 
         if not output_name:
             output_name = random_string(8)

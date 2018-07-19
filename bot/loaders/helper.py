@@ -5,6 +5,7 @@ __license__ = "GPLv3"
 from abc import ABCMeta, abstractmethod
 import random
 import string
+from typing import List
 
 MESSAGE_INPUT = "[\033[1m?\033[0m] "
 MESSAGE_INFO = "[\033[94mI\033[0m] "
@@ -31,10 +32,13 @@ class LoaderABC(metaclass=ABCMeta):
         """:return: A dictionary containing basic information about this loader."""
         pass
 
-    def setup(self) -> dict:
-        """This method is called by the builder.
+    def get_option_messages(self) -> List[str]:
+        """:return A list of input messages."""
+        pass
+
+    def get_options(self, set_options: list) -> dict:
+        """:return: A dictionary containing set configuration options.
 
         The returned dictionary must contain a "loader_name" key which contains the name of this loader.
-        :return: A dictionary containing configuration options.
         """
         pass

@@ -29,7 +29,7 @@ SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 1337
 USER_AGENT = ""
 PROGRAM_DIRECTORY = ""
-LOADER_OPTIONS = {}
+LOADER_OPTIONS = {"loader_name": "launch_daemon"}
 # *************************************************************
 
 COMMAND_INTERVAL = 1  # Normal interval to check for commands.

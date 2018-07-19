@@ -7,18 +7,19 @@ __license__ = "GPLv3"
 from argparse import ArgumentParser
 from os import path, mkdir, remove
 
-from server.controller import Controller
+from server.http import start_server
 from server.model import Model
 from server.modules.helper import DATA_DIRECTORY
 from server.version import VERSION
 from server.view.cli import ViewCLI
+from server.view.gui import ViewGUI
 
 BANNER = """\
 ▓█████ ██▒   █▓ ██▓ ██▓     ▒█████    ██████ ▒██   ██▒
 ▓█   ▀▓██░   █▒▓██▒▓██▒    ▒██▒  ██▒▒██    ▒ ▒▒ █ █ ▒░
 ▒███   ▓██  █▒░▒██▒▒██░    ▒██░  ██▒░ ▓██▄   ░░  █   ░
-▒▓█  ▄  ▒██ █░░░██░▒██░    ▒██   ██░  ▒   ██▒ ░ █ █ ▒ 
-░▒████▒  ▒▀█░  ░██░░██████▒░ ████▓▒░▒██████▒▒▒██▒ ▒██▒  @{} (v{})
+▒▓█  ▄  ▒██ █░░░██░▒██░    ▒██   ██░  ▒   ██▒ ░ █ █ ▒   @{} (v{})
+░▒████▒  ▒▀█░  ░██░░██████▒░ ████▓▒░▒██████▒▒▒██▒ ▒██▒  GPLv3 licensed
 ░░ ▒░ ░  ░ ▐░  ░▓  ░ ▒░▓  ░░ ▒░▒░▒░ ▒ ▒▓▒ ▒ ░▒▒ ░ ░▓ ░
  ░ ░  ░  ░ ░░   ▒ ░░ ░ ▒  ░  ░ ▒ ▒░ ░ ░▒  ░ ░░░   ░▒ ░
    ░       ░░   ▒ ░  ░ ░   ░ ░ ░ ▒  ░  ░  ░   ░    ░  
@@ -59,8 +60,9 @@ def main():
 
     parser = ArgumentParser()
     parser.add_argument("-p", "--port", help="server port to listen on", type=int)
+    parser.add_argument("--cli", help="show the command line interface", action="store_true")
     arguments = parser.parse_args()
-    
+
     if arguments.port:
         server_port = arguments.port
     else:
@@ -72,11 +74,13 @@ def main():
                 continue
 
     model = Model()
-    view = ViewCLI()
-    controller = Controller(view, model, server_port)
+    view = ViewCLI(model, server_port) if arguments.cli else ViewGUI(model, server_port)
 
-    # Start the controller, blocks until exit.
-    controller.start()
+    # Start handling bot requests
+    start_server(model, view, server_port)
+
+    # Start the view, blocks until exit.
+    view.start()
 
     print(MESSAGE_INFO + "Feel free to submit any issues or feature requests on GitHub.")
     print(MESSAGE_INFO + "Goodbye!")

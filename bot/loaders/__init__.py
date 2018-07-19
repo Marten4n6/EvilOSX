@@ -50,21 +50,30 @@ def get_info(loader_name: str) -> dict:
     try:
         return cached_loader.get_info()
     except AttributeError:
-        raise AttributeError("The module \"{}\" is missing the get_info function!".format(module_name)) from None
+        raise AttributeError("The loader \"{}\" is missing the get_info function!".format(loader_name)) from None
 
 
-def get_options(loader_name: str) -> dict:
-    """:return: A dictionary containing the loader's configuration options."""
+def get_option_messages(loader_name: str) -> list:
     cached_loader = _loader_cache.get(loader_name)
 
     try:
         if cached_loader:
-            return cached_loader.setup()
+            return cached_loader.get_option_messages()
         else:
-            return _load_loader(loader_name).setup()
+            return _load_loader(loader_name).get_option_messages()
     except AttributeError:
         # This loader doesn't require any setup, no problem.
-        return {}
+        return []
+
+
+def get_options(loader_name: str, set_options: list) -> dict:
+    """:return: A dictionary containing the loader's configuration options."""
+    cached_loader = _loader_cache.get(loader_name)
+
+    if cached_loader:
+        return cached_loader.get_options(set_options)
+    else:
+        return _load_loader(loader_name).get_options(set_options)
 
 
 def get_remove_code(loader_name: str) -> bytes:

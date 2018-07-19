@@ -1,2 +1,3 @@
 urwid
 pycryptodomex
+PyQT5

