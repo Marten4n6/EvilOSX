@@ -28,6 +28,7 @@
 - No bot dependencies (pure python)
 - Undetected by anti-virus (OpenSSL [AES-256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encrypted payloads)
 - Persistent
+- [GUI](https://en.wikipedia.org/wiki/Graphical_user_interface) and [CLI](https://en.wikipedia.org/wiki/Command-line_interface) support
 - Retrieve Chrome passwords
 - Retrieve iCloud tokens and contacts
 - Retrieve/monitor the clipboard
@@ -64,8 +65,7 @@ $ python3 start.py
 ![](https://i.imgur.com/GHZD9br.png)
 ![](https://i.imgur.com/qw3k4z4.png)
 
-##
-There's also a command line interface for those who want to use this over SSH:
+There is also a command line interface for those who want to use this over SSH:
 ```bash
 $ python3 start.py --cli
 ```
