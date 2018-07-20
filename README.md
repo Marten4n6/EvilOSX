@@ -28,7 +28,7 @@
 - No bot dependencies (pure python)
 - Undetected by anti-virus (OpenSSL [AES-256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encrypted payloads)
 - Persistent
-- [GUI](https://en.wikipedia.org/wiki/Graphical_user_interface) and [CLI](https://en.wikipedia.org/wiki/Command-line_interface) support
+- GUI and CLI support
 - Retrieve Chrome passwords
 - Retrieve iCloud tokens and contacts
 - Retrieve/monitor the clipboard
@@ -40,6 +40,8 @@
 - Attempt to get root via local privilege escalation
 
 ## How To Use
+
+### Normal users
 The **server** side requires [python3](https://www.python.org/downloads) to run. <br/>
 The **bot** side is written in python2 which is already installed on macOS / OS X. <br/><br/>
 Once python3 is installed, open a terminal and type the following:
@@ -57,20 +59,25 @@ $ cd EvilOSX
 # Start listening for connections
 $ python3 start.py
 
-# Lastly, run the built launcher on your target
+# Lastly, run the built launcher (see the builder tab) on your target(s)
 ```
-**Because payloads are created unique to the target system (automatically by the server), the server must be running when any bot connects for the first time.**
+**Warning:** Because payloads are created unique to the target system (automatically by the server), the server must be running when any bot connects for the first time.
 
-## Screenshots
-![](https://i.imgur.com/GHZD9br.png)
-![](https://i.imgur.com/qw3k4z4.png)
-
+### Advanced users
 There is also a command line interface for those who want to use this over SSH:
 ```bash
-$ python3 start.py --cli
+# Create a launcher to infect your target(s)
+$ python3 builder.py
+
+# Start listening for connections
+$ python3 start.py --cli --port 1337
+
+# Lastly, run the built launcher on your target(s)
 ```
 
-![](https://i.imgur.com/SpDPOUv.png)
+## Screenshots
+![GUI](https://i.imgur.com/qw3k4z4.png)
+![CLI](https://i.imgur.com/DGYCQMl.png)
 
 ## Motivation
 This project was created to be used with my [Rubber Ducky](https://hakshop.com/products/usb-rubber-ducky-deluxe), here's the simple script:
@@ -125,6 +132,9 @@ For more information on SemVer, please visit https://semver.org/.
 
 ## Issues
 Feel free to submit any issues or feature requests [here](https://github.com/Marten4n6/EvilOSX/issues).
+
+## Contributing
+Contributions are very welcome! For a simple guide on how to create modules, click [here](https://github.com/Marten4n6/EvilOSX/blob/master/CONTRIBUTING.md).
 
 ## Credits
 - The awesome [Empire](https://github.com/EmpireProject) project
