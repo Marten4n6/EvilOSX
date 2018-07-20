@@ -164,8 +164,13 @@ def main():
         except (ValueError, IndexError):
             continue
 
+    set_options = []
+
+    for option_message in loaders.get_option_messages(selected_loader):
+        set_options.append(input(MESSAGE_INPUT + option_message))
+
     # Loader setup
-    loader_options = loaders.get_options(selected_loader)
+    loader_options = loaders.get_options(selected_loader, set_options)
     loader_options["program_directory"] = program_directory
 
     # Create the launcher
