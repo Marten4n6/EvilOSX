@@ -182,7 +182,7 @@ class _RequestHandler(BaseHTTPRequestHandler):
                 self._model.update_bot(bot_uid, time(), new_path)
                 self._view.on_bot_path_change(self._model.get_bot(bot_uid))
 
-            self._view.on_response(response)
+            self._view.on_response(response.decode())
 
         self._send_command()
 
