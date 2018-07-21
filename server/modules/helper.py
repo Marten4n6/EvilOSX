@@ -28,12 +28,12 @@ class ModuleViewABC(metaclass=ABCMeta):
     """Abstract base class which allows modules to interact with the view."""
 
     @abstractmethod
-    def display_error(self, message: str):
+    def display_error(self, text: str):
         """Displays an error message to the user."""
         pass
 
     @abstractmethod
-    def display_info(self, message: str):
+    def display_info(self, text: str):
         """Displays an information message to the user."""
         pass
 
@@ -43,7 +43,7 @@ class ModuleViewABC(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def output(self, message: str, separator: bool = False):
+    def output(self, line: str, separator: bool = False):
         """Outputs a message to the response view."""
         pass
 
@@ -70,4 +70,4 @@ class ModuleABC(metaclass=ABCMeta):
 
     def process_response(self, response: bytes, response_options: dict):
         """Processes the module's response."""
-        self._view.output(response)
+        self._view.output(response.decode())

