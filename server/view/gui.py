@@ -180,7 +180,7 @@ class _ResponsesTab(QTabWidget):
         layout = QVBoxLayout()
         self._output_field = QTextEdit()
 
-        self._output_field.setDisabled(True)
+        self._output_field.setTextInteractionFlags(Qt.NoTextInteraction)
         self._output_field.setPlaceholderText("There are currently no responses.")
 
         layout.addWidget(self._output_field)
