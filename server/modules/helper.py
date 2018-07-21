@@ -38,12 +38,12 @@ class ModuleViewABC(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def should_continue(self, messages: List[str], continue_message: str = None) -> bool:
+    def should_continue(self, messages: List[str]) -> bool:
         """Shows the list of messages and asks the user if they want to continue."""
         pass
 
     @abstractmethod
-    def output(self, message: bytes, separator: bool = False):
+    def output(self, message: str, separator: bool = False):
         """Outputs a message to the response view."""
         pass
 

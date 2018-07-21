@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from typing import List
+
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
@@ -14,6 +16,7 @@ from server import modules
 from server.model import Command, CommandType
 from server.version import VERSION
 from server.view.helper import *
+from server.modules.helper import ModuleViewABC
 
 
 class _OutputView:
@@ -152,6 +155,38 @@ class _CommandInput(urwid.Pile):
             self._main_loop.draw_screen()
 
 
+class _ModuleView(ModuleViewABC):
+    """Class which allows modules to interact with the view."""
+
+    def __init__(self, view):
+        self._view = view
+
+    def display_error(self, message: str):
+        self._view.output(message, "attention")
+
+    def display_info(self, message: str):
+        self._view.output(message, "info")
+
+    def should_continue(self, messages: List[str]) -> bool:
+        lines = []
+
+        for message in messages:
+            lines.append((message, ""))
+
+        confirm = self._view.prompt("Are you sure you want to continue? [Y/n]", lines).lower()
+
+        if not confirm or confirm == "y":
+            return True
+        else:
+            return False
+
+    def output(self, message: str, separator: bool = False):
+        if separator:
+            self._view.output_separator()
+
+        self._view.output(message)
+
+
 class ViewCLI(ViewABC):
     """This class interacts with the user via a command line interface.
 
@@ -175,6 +210,7 @@ class ViewCLI(ViewABC):
         self._command_input = _CommandInput()
 
         self._main_loop = None
+        self._connected_bot = None
 
         self.set_window_title("EvilOSX v{} | Port: {} | Available bots: 0".format(VERSION, server_port))
         self.output("Server started, waiting for connections...", "info")
@@ -215,7 +251,9 @@ class ViewCLI(ViewABC):
         ))
 
     def on_bot_path_change(self, bot: Bot):
-        super().on_bot_path_change(bot)
+        self.set_footer_text("Command ({}@{}, {}): ".format(
+            bot.username, bot.hostname, bot.local_path
+        ))
 
     def prompt(self, prompt_text: str, lines: list = None) -> str:
         if lines:
@@ -304,7 +342,8 @@ class ViewCLI(ViewABC):
                     module = modules.get_module(module_name)
 
                     if not module:
-                        module = modules.load_module(module_name, self, self._model)
+                        module_view = _ModuleView(self)
+                        module = modules.load_module(module_name, module_view, self._model)
 
                     self.output("{:16} -  {}".format(module_name, module.get_info()["Description"]))
                 except AttributeError as ex:
@@ -351,7 +390,8 @@ class ViewCLI(ViewABC):
             code = ("", b"")
 
             if not module:
-                module = modules.load_module(module_name, self, self._model)
+                module_view = _ModuleView(self)
+                module = modules.load_module(module_name, module_view, self._model)
 
             set_options = []
 

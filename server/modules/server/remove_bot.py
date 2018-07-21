@@ -22,7 +22,7 @@ class Module(ModuleABC):
     def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
         should_continue = self._view.should_continue([
             "You are about to remove EvilOSX from the bot(s)."
-        ]).lower()
+        ])
 
         if not should_continue:
             return False, None

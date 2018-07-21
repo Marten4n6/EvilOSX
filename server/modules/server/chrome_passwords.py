@@ -19,7 +19,7 @@ class Module(ModuleABC):
     def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
         confirm = self._view.should_continue([
             "This will prompt the bot to allow keychain access."
-        ]).lower()
+        ])
 
         if not confirm or confirm == "y":
             return True, None
