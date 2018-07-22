@@ -10,6 +10,14 @@ class ViewABC(metaclass=ABCMeta):
     """Abstract base class for views, used by the background server."""
 
     @abstractmethod
+    def output(self, line: str, prefix=""):
+        """Adds a line to the output view."""
+        pass
+
+    def output_separator(self):
+        self.output("-" * 5)
+
+    @abstractmethod
     def on_response(self, response: str):
         """Called when a bot sends a response."""
         pass

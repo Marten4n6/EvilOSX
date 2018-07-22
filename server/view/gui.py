@@ -199,7 +199,7 @@ class ModuleView(ModuleViewABC):
     """Used by modules to interact with this GUI."""
 
     def __init__(self, responses_tab: _ResponsesTab):
-        self.responses_tab = responses_tab
+        self._responses_tab = responses_tab
 
     def display_error(self, text: str):
         message_box = QMessageBox()
@@ -222,7 +222,7 @@ class ModuleView(ModuleViewABC):
     def should_continue(self, messages: List[str]) -> bool:
         messages.append("\nAre you sure you want to continue?")
 
-        confirm = QMessageBox.question(self.responses_tab, "Confirmation",
+        confirm = QMessageBox.question(self._responses_tab, "Confirmation",
                                        "\n".join(messages), QMessageBox.Yes, QMessageBox.No)
 
         if confirm == QMessageBox.Yes:
@@ -230,11 +230,8 @@ class ModuleView(ModuleViewABC):
         else:
             return False
 
-    def output(self, line: str, separator: bool = False):
-        if separator:
-            self.responses_tab.output("---")
-
-        self.responses_tab.output(line)
+    def output(self, line: str, prefix=""):
+        self._responses_tab.output(line)
 
 
 class _ExecuteTab(QTabWidget):
@@ -423,6 +420,11 @@ class _ExecuteTab(QTabWidget):
                 code = loaders.get_update_code(self._connected_bot.loader_name)
             else:
                 code = modules.get_code(module_name)
+
+            if not options:
+                options = {}
+
+            options["module_name"] = module_name
 
             self._model.add_command(self._current_bot.uid, Command(
                 CommandType.MODULE, code, options
@@ -652,10 +654,13 @@ class ViewGUI(ViewABC):
     def get_tabbed_widget(self) -> QWidget:
         return self._tabbed_widget
 
+    def output(self, line: str, prefix=""):
+        self._tabbed_widget.get_control_tab().get_responses_tab().output(line)
+
     def on_response(self, response: str):
         responses_tab = self._tabbed_widget.get_control_tab().get_responses_tab()
 
-        responses_tab.output("-" * 5)
+        self.output_separator()
 
         for line in response.splitlines():
             responses_tab.output(line)

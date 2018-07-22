@@ -43,9 +43,12 @@ class ModuleViewABC(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def output(self, line: str, separator: bool = False):
+    def output(self, line: str, prefix=""):
         """Outputs a message to the response view."""
         pass
+
+    def output_separator(self):
+        self.output("-" * 5)
 
 
 class ModuleABC(metaclass=ABCMeta):

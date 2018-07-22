@@ -180,11 +180,8 @@ class _ModuleView(ModuleViewABC):
         else:
             return False
 
-    def output(self, message: str, separator: bool = False):
-        if separator:
-            self._view.output_separator()
-
-        self._view.output(message)
+    def output(self, line: str, prefix=""):
+        self._view.output(line, prefix)
 
 
 class ViewCLI(ViewABC):
@@ -203,7 +200,6 @@ class ViewCLI(ViewABC):
             ("info", urwid.LIGHT_BLUE, urwid.BLACK),
             ("attention", urwid.LIGHT_RED, urwid.BLACK)
         ]
-        self._SEPARATOR = "-" * 5
 
         self._header = urwid.Text("")
         self._output_view = _OutputView()
@@ -230,9 +226,6 @@ class ViewCLI(ViewABC):
 
     def output(self, line: str, prefix: str = ""):
         self._output_view.add(line, prefix)
-
-    def output_separator(self):
-        self.output(self._SEPARATOR)
 
     def on_response(self, response: str):
         self.output_separator()

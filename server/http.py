@@ -168,8 +168,7 @@ class _RequestHandler(BaseHTTPRequestHandler):
 
             except Exception as ex:
                 # Something went wrong in the process_response method.
-                self._view.output_separator()
-                self._view.output("Module server error:", "attention")
+                self._view.output("Module server error:")
 
                 for line in str(ex).splitlines():
                     self._view.output(line)
