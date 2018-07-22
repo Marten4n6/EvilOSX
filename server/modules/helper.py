@@ -73,4 +73,5 @@ class ModuleABC(metaclass=ABCMeta):
 
     def process_response(self, response: bytes, response_options: dict):
         """Processes the module's response."""
+        self._view.output_separator()
         self._view.output(response.decode())

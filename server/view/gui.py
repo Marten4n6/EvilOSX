@@ -181,7 +181,7 @@ class _ResponsesTab(QTabWidget):
         self._output_field = QTextEdit()
 
         self._output_field.setTextInteractionFlags(Qt.NoTextInteraction)
-        self._output_field.setPlaceholderText("There are currently no responses.")
+        self._output_field.setPlaceholderText("Please wait for responses...")
 
         layout.addWidget(self._output_field)
         self.setLayout(layout)
@@ -449,7 +449,11 @@ class _ExecuteTab(QTabWidget):
             return
 
         self._model.add_command(self._current_bot.uid, Command(CommandType.SHELL, command_input.text().encode()))
+
         command_input.clear()
+        self.display_info("Command added to the queue of:\n {}@{}".format(
+            self._current_bot.username, self._current_bot.hostname
+        ))
 
 
 class _BotTable(QTableWidget):
