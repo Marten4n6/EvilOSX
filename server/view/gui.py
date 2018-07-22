@@ -399,6 +399,15 @@ class _ExecuteTab(QTabWidget):
         self._sub_layout.addWidget(run_button)
         self._sub_layout.setContentsMargins(0, 15, 0, 0)
 
+    def display_info(self, text: str):
+        message_box = QMessageBox()
+
+        message_box.setIcon(QMessageBox.Information)
+        message_box.setWindowTitle("Information")
+        message_box.setText(text)
+        message_box.setStandardButtons(QMessageBox.Ok)
+        message_box.exec_()
+
     def _on_module_run(self, module_name: str, input_fields: list):
         """Handles running modules."""
         set_options = []
@@ -429,6 +438,10 @@ class _ExecuteTab(QTabWidget):
             self._model.add_command(self._current_bot.uid, Command(
                 CommandType.MODULE, code, options
             ))
+
+            self.display_info("Module added to the queue of:\n {}@{}".format(
+                self._current_bot.username, self._current_bot.hostname)
+            )
 
     def _on_command_run(self, command_input: QLineEdit):
         """Handles running commands."""
