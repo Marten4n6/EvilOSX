@@ -40,14 +40,14 @@ def upload_file(file_path, buffer_size):
 
 
 def run(options):
-    file_path = options["file_path"]
+    file_path = path.expanduser(options["file_path"])
     buffer_size = options["buffer_size"]
 
     if not path.exists(file_path):
-        print("[download] Failed to download file, invalid path.")
+        print "Failed to download file, invalid path."
     else:
         if path.isdir(file_path):
-            print "[download] Compressing directory: " + file_path
+            print "Compressing directory: " + file_path
             zip_file = path.join("/tmp", str(uuid.uuid4()).replace("-", "")[:12] + ".zip")
 
             run_command("zip -r " + zip_file + " " + file_path)
