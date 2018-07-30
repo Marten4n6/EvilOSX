@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a href="https://github.com/Marten4n6/EvilOSX"><img src="/data/images/logo.png?raw=true" alt="EvilOSX" width="280"></a>
+  <a href="https://github.com/Marten4n6/EvilOSX"><img src="/data/images/logo.png?raw=true" alt="Logo" width="280"></a>
   <br>
   EvilOSX
   <br>
@@ -10,13 +10,13 @@
 
 <p align="center">
   <a href="https://github.com/Marten4n6/EvilOSX/blob/master/LICENSE.txt">
-      <img src="https://img.shields.io/badge/license-GPLv3-blue.svg?style=flat-square">
+      <img src="https://img.shields.io/badge/license-GPLv3-blue.svg?style=flat-square" alt="License">
   </a>
   <a href="https://github.com/Marten4n6/EvilOSX/issues">
-    <img src="https://img.shields.io/github/issues/Marten4n6/EvilOSX.svg?style=flat-square">
+    <img src="https://img.shields.io/github/issues/Marten4n6/EvilOSX.svg?style=flat-square" alt="Issues">
   </a>
   <a href="https://github.com/Marten4n6/EvilOSX/blob/master/CONTRIBUTING.md">
-      <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square">
+      <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square" alt="Contributing">
   </a>
 </p>
 
@@ -41,10 +41,9 @@
 
 ## How To Use
 
+The server requires [python3](https://www.python.org/downloads/) to run.
+
 ### Normal users
-The **server** side requires [python3](https://www.python.org/downloads) to run. <br/>
-The **bot** side is written in python2 which is already installed on macOS / OS X. <br/><br/>
-Once python3 is installed, open a terminal and type the following:
 
 ```bash
 # Clone or download this repository
@@ -56,28 +55,27 @@ $ sudo pip3 install -r requirements.txt
 # Go into the repository
 $ cd EvilOSX
 
-# Start listening for connections
+# Start the GUI
 $ python3 start.py
 
-# Lastly, run the built launcher (see the builder tab) on your target(s)
+# Lastly, run a built launcher on your target(s)
 ```
 **Warning:** Because payloads are created unique to the target system (automatically by the server), the server must be running when any bot connects for the first time.
 
 ### Advanced users
+
 There is also a command line interface for those who want to use this over SSH:
 ```bash
 # Create a launcher to infect your target(s)
-$ python3 builder.py
+$ python3 start.py --builder
 
-# Start listening for connections
+# Start the CLI
 $ python3 start.py --cli --port 1337
-
-# Lastly, run the built launcher on your target(s)
 ```
 
 ## Screenshots
-![GUI](https://i.imgur.com/qw3k4z4.png)
 ![CLI](https://i.imgur.com/DGYCQMl.png)
+![GUI](https://i.imgur.com/qw3k4z4.png)
 
 ## Motivation
 This project was created to be used with my [Rubber Ducky](https://hakshop.com/products/usb-rubber-ducky-deluxe), here's the simple script:
@@ -134,7 +132,7 @@ For more information on SemVer, please visit https://semver.org/.
 Feel free to submit any issues or feature requests [here](https://github.com/Marten4n6/EvilOSX/issues).
 
 ## Contributing
-Contributions are very welcome! For a simple guide on how to create modules, click [here](https://github.com/Marten4n6/EvilOSX/blob/master/CONTRIBUTING.md).
+For a simple guide on how to create modules, click [here](https://github.com/Marten4n6/EvilOSX/blob/master/CONTRIBUTING.md).
 
 ## Credits
 - The awesome [Empire](https://github.com/EmpireProject) project
