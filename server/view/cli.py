@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from typing import List
-
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
@@ -8,15 +6,16 @@ from queue import Queue
 from threading import Lock, current_thread
 from threading import Thread
 from time import strftime, localtime
+from typing import List
 
 import urwid
 
 from bot import loaders
 from server import modules
 from server.model import Command, CommandType
+from server.modules.helper import ModuleViewABC
 from server.version import VERSION
 from server.view.helper import *
-from server.modules.helper import ModuleViewABC
 
 
 class _OutputView:
