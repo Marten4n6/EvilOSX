@@ -7,6 +7,7 @@ import string
 from abc import ABCMeta, abstractmethod
 from os import path
 from typing import Tuple, List, Optional
+from server.model import Model
 
 DATA_DIRECTORY = path.realpath(path.join(path.dirname(__file__), path.pardir, path.pardir, "data"))
 OUTPUT_DIRECTORY = path.join(DATA_DIRECTORY, "output")
@@ -54,7 +55,7 @@ class ModuleViewABC(metaclass=ABCMeta):
 class ModuleABC(metaclass=ABCMeta):
     """Abstract base class for modules."""
 
-    def __init__(self, view: ModuleViewABC, model):
+    def __init__(self, view: ModuleViewABC, model: Model):
         self._view = view
         self._model = model
 
