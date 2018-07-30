@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
-from typing import List
-
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
 from os import path
 from time import strftime, localtime
+from typing import List
 from uuid import uuid4
 
 from PyQt5.Qt import QApplication, QMainWindow, QTabWidget, QTableWidget, QWidget, QPalette, QColor, QPixmap, \
-    QLabel, QHBoxLayout, QGridLayout, QSplitter, QAbstractItemView, QHeaderView, QTableWidgetItem, \
-    QComboBox, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QTextEdit
+                     QLabel, QHBoxLayout, QGridLayout, QSplitter, QAbstractItemView, QHeaderView, QTableWidgetItem, \
+                     QComboBox, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QTextEdit
 from PyQt5.QtCore import Qt
 
 from bot import launchers, loaders
 from server import modules
+from server.model import Command, CommandType
+from server.modules.helper import ModuleViewABC
 from server.version import VERSION
 from server.view.helper import *
-from server.modules.helper import ModuleViewABC
-from server.model import Bot, Command, CommandType
 
 
 class _BuilderTab(QWidget):
@@ -531,7 +530,7 @@ class _ControlTab(QWidget):
         self._bot_table.set_on_selection_changed(self.on_table_selection_changed)
 
     def on_table_selection_changed(self):
-        bot_uid = self._bot_table.item(self._bot_table.currentColumn(), 0).text()
+        bot_uid = self._bot_table.item(self._bot_table.currentRow(), 0).text()
 
         self._execute_tab.set_current_bot(self._model.get_bot(bot_uid))
         self._execute_tab.set_module_layout()
