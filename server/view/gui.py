@@ -423,9 +423,9 @@ class _ExecuteTab(QTabWidget):
 
         if successful:
             if module_name == "remove_bot":
-                code = loaders.get_remove_code(self._connected_bot.loader_name)
+                code = loaders.get_remove_code(self._current_bot.loader_name)
             elif module_name == "update_bot":
-                code = loaders.get_update_code(self._connected_bot.loader_name)
+                code = loaders.get_update_code(self._current_bot.loader_name)
             else:
                 code = modules.get_code(module_name)
 
