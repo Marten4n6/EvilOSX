@@ -31,7 +31,7 @@ class Module(ModuleABC):
         }
 
      def get_setup_messages() -> List[str]:
-        """Messages presented to the user to enter.
+        """Setup messages which will be presented to the user.
 
         In this example we'll ask the user for the message they want
         text to speech to speak to the bot.
@@ -58,7 +58,7 @@ Now this module will be picked up by the server (you can see this by starting th
 ### Bot
 Now let's make our module actually do something...
 
-The second file should be under the [bot](https://github.com/Marten4n6/EvilOSX/tree/master/server/modules/bot) directory and be called the same as the server side. <br/>
+The second file should be under the [bot](https://github.com/Marten4n6/EvilOSX/tree/master/server/modules/bot) directory and named the same as the server side. <br/>
 Every module must contain the following function:
 ```python
 def run(options):
@@ -70,7 +70,7 @@ It's useful to know that this dictionary always contains the following keys: <br
 ```"server_host", "server_port", "program_directory"```
 
 Anything printed by a module will **directly** be returned to the server's ```process_response``` method. <br/>
-Optionally, the dictionary returned by the server's ```setup``` method may have a "response_options" key which is then also sent back to this function.
+Optionally, the dictionary returned by the server's ```setup``` method may have a "response_options" key which is then also sent back to this method.
 
 Here's the bot side of our example:
 ```python
@@ -85,4 +85,4 @@ def run(options):
 ```
 
 ##
-Feel free to submit an [issue](https://github.com/Marten4n6/EvilOSX/issues) if you have any further questions.
+Feel free to submit an [issue](https://github.com/Marten4n6/EvilOSX/issues) or send me an email if you have any further questions.
