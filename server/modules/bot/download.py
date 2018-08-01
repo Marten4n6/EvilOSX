@@ -32,10 +32,10 @@ def upload_file(file_path, buffer_size):
                 if not piece:
                     break
 
-                print piece
+                print(piece)
             except SystemExit:
                 # Thrown when "kill download" is run.
-                print "Stopped uploading."
+                print("Stopped uploading.")
                 break
 
 
@@ -44,10 +44,10 @@ def run(options):
     buffer_size = options["buffer_size"]
 
     if not path.exists(file_path):
-        print "Failed to download file, invalid path."
+        print("Failed to download file, invalid path.")
     else:
         if path.isdir(file_path):
-            print "Compressing directory: " + file_path
+            print("Compressing directory: " + file_path)
             zip_file = path.join("/tmp", str(uuid.uuid4()).replace("-", "")[:12] + ".zip")
 
             run_command("zip -r " + zip_file + " " + file_path)
@@ -55,13 +55,13 @@ def run(options):
             # Let the server know the output file is a zip file.
             options["response_options"]["output_name"] = options["response_options"]["output_name"] + ".zip"
 
-            print "Started|" + get_file_hash(zip_file)
+            print("Started|" + get_file_hash(zip_file))
             upload_file(zip_file, buffer_size)
 
-            print "[download] Finished."
+            print("[download] Finished.")
             run_command("rm -rf " + zip_file)
         else:
-            print "Started|" + get_file_hash(file_path)
+            print("Started|" + get_file_hash(file_path))
             upload_file(file_path, buffer_size)
 
-            print "[download] Finished."
+            print("[download] Finished.")

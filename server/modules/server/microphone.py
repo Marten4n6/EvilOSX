@@ -6,7 +6,7 @@ from server.modules.helper import *
 
 
 class Module(ModuleABC):
-    def get_info(self) -> dict:
+    def get_info(self):
         return {
             "Author:": ["Marten4n6"],
             "Description": "Record the microphone.",
@@ -17,14 +17,14 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def get_setup_messages(self) -> List[str]:
+    def get_setup_messages(self):
         return [
             "Time in seconds to record (Leave empty for 5): ",
             "Remote output directory (Leave empty for /tmp): ",
             "Remote output name (Leave empty for <RANDOM>): "
         ]
 
-    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+    def setup(self, set_options):
         record_time = set_options[0]
         output_dir = set_options[1]
         output_name = set_options[2]

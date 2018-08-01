@@ -7,7 +7,7 @@ from textwrap import dedent
 
 
 class Launcher(LauncherABC):
-    def generate(self, stager: str) -> tuple:
+    def generate(self, stager):
         return ("py", dedent("""\
         #!/usr/bin/python
         # -*- coding: utf-8 -*-

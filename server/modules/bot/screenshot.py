@@ -14,5 +14,5 @@ def run_command(command):
 
 def run(options):
     run_command("screencapture -x " + OUTPUT_FILE)
-    print run_command("base64 " + OUTPUT_FILE)
+    print(run_command("base64 " + OUTPUT_FILE))
     run_command("rm -rf " + OUTPUT_FILE)

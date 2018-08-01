@@ -37,9 +37,9 @@ def print_safari_history(history_limit, output_file):
                     out.write("\n")
 
             database.close()
-            print string_builder
+            print(string_builder)
     except Exception as ex:
-        print "[safari] Error: " + str(ex)
+        print("[safari] Error: " + str(ex))
 
 
 def print_chrome_history(history_limit, output_file):
@@ -73,9 +73,9 @@ def print_chrome_history(history_limit, output_file):
                         out.write(str(item) + "\n")
 
             database.close()
-            print string_builder
+            print(string_builder)
     except Exception as ex:
-        print "[chrome] Error: " + str(ex)
+        print("[chrome] Error: " + str(ex))
 
 
 def run(options):

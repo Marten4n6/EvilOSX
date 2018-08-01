@@ -14,4 +14,4 @@ def run(options):
         output_file.write(urllib2.urlopen(download_url).read())
         output_file.close()  # Important!
 
-    print "File downloaded finished, saved to: " + output_path
+    print("File downloaded finished, saved to: " + output_path)

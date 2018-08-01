@@ -43,7 +43,7 @@ def run(options):
     )
     
     if error:
-        print "Unexpected error: " + str(error)
+        print("Unexpected error: " + str(error))
     else:
         # Record audio for x seconds
         recorder.record()
@@ -53,7 +53,7 @@ def run(options):
                 time.sleep(1)
             except SystemExit:
                 # Kill task called.
-                print "Recording cancelled, " + str(i) + " seconds were left."
+                print("Recording cancelled, " + str(i) + " seconds were left.")
                 break
 
         recorder.stop()
@@ -62,4 +62,4 @@ def run(options):
 
         # Done.
         os.rename(output_path, output_path + ".mp3")
-        print "Finished recording, audio saved to: " + output_path + ".mp3"
+        print("Finished recording, audio saved to: " + output_path + ".mp3")

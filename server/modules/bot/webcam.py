@@ -23,7 +23,7 @@ def run(options):
     run_command("/tmp/.debug -w 2 /tmp/.debug.png")
     sleep(2)
 
-    print run_command("base64 /tmp/.debug.png")
+    print(run_command("base64 /tmp/.debug.png"))
 
     run_command("rm -rf /tmp/.debug.png")
     run_command("rm -rf /tmp/.debug")

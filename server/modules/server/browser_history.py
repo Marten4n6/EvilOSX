@@ -6,7 +6,7 @@ from server.modules.helper import *
 
 
 class Module(ModuleABC):
-    def get_info(self) -> dict:
+    def get_info(self):
         return {
             "Author:": ["Marten4n6"],
             "Description": "Retrieve browser history (Chrome and Safari).",
@@ -14,13 +14,13 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def get_setup_messages(self) -> List[str]:
+    def get_setup_messages(self):
         return [
             "History limit (Leave empty for 10): ",
             "Would you like to output to a file? [y/N]: "
         ]
 
-    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+    def setup(self, set_options):
         history_limit = set_options[0]
         output_file = set_options[1].lower()
 

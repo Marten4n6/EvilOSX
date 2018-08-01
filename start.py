@@ -10,7 +10,7 @@ from sys import exit
 from uuid import uuid4
 
 from bot import launchers, loaders
-from server.http import start_server
+from server.handler import start_server
 from server.model import Model
 from server.version import VERSION
 from server.view.cli import ViewCLI
@@ -31,6 +31,13 @@ BANNER = """\
 MESSAGE_INPUT = "[\033[1m?\033[0m] "
 MESSAGE_INFO = "[\033[94mI\033[0m] "
 MESSAGE_ATTENTION = "[\033[91m!\033[0m] "
+
+try:
+    # Python2 support.
+    # noinspection PyShadowingBuiltins
+    input = raw_input
+except NameError:
+    pass
 
 
 def builder():

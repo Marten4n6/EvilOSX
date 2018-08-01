@@ -25,14 +25,14 @@ def run(options):
                         out.write(pasteboard_string + "\n")
                 else:
                     st = datetime.fromtimestamp(time()).strftime("%H:%M:%S")
-                    print "[clipboard] " + st + " - '%s'" % str(pasteboard_string).encode("utf-8")
+                    print("[clipboard] " + st + " - '%s'" % str(pasteboard_string).encode("utf-8"))
 
             previous = pasteboard_string
 
             sleep(1)
             elapsed_time += 1
         except Exception as ex:
-            print str(ex)
+            print(str(ex))
 
     if output_file:
-        print "Clipboard written to: " + output_file
+        print("Clipboard written to: " + output_file)

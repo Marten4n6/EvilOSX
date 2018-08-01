@@ -2,13 +2,12 @@
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
-from queue import Queue
 from threading import Lock, current_thread
 from threading import Thread
 from time import strftime, localtime
-from typing import List
 
 import urwid
+from queue import Queue
 
 from bot import loaders
 from server import modules
@@ -21,7 +20,7 @@ from server.view.helper import *
 class _OutputView:
     """This class shows the command output view."""
 
-    def __init__(self, max_size: int = 69):
+    def __init__(self, max_size=69):
         self._max_size = max_size
 
         self._output_view = urwid.ListBox(urwid.SimpleListWalker([]))
@@ -29,13 +28,20 @@ class _OutputView:
 
         self._main_loop = None
 
-    def get(self) -> urwid.ListBox:
+    def get(self):
+        """
+        :rtype: urwid.ListBox
+        """
         return self._output_view
 
     def set_main_loop(self, main_loop):
         self._main_loop = main_loop
 
-    def add(self, line: str, prefix: str = ""):
+    def add(self, line, prefix=""):
+        """
+        :type line: str
+        :type prefix: str
+        """
         with self._lock:
             was_on_end = self._output_view.get_focus()[1] == len(self._output_view.body) - 1
 
@@ -96,12 +102,19 @@ class _CommandInput(urwid.Pile):
     def set_main_loop(self, main_loop):
         self._main_loop = main_loop
 
-    def set_header_text(self, text: str):
+    def set_header_text(self, text):
+        """
+        :type text: str
+        """
         with self._lock:
             self._header.set_text(text)
             self._async_reload()
 
-    def add(self, line: str, prefix: str = ""):
+    def add(self, line, prefix=""):
+        """"
+        :type line: str
+        :type prefix: str
+        """
         with self._lock:
             # Set the height of the output list so the line is actually visible.
             self._output_layout.height = len(self._output_list.body) + 1
@@ -124,7 +137,10 @@ class _CommandInput(urwid.Pile):
             self._output_layout.height = 0
             self._async_reload()
 
-    def get_prompt_input(self) -> str:
+    def get_prompt_input(self):
+        """
+        :rtype: str
+        """
         self._prompt_mode = True
 
         # Wait for user input.
@@ -160,13 +176,23 @@ class _ModuleView(ModuleViewABC):
     def __init__(self, view):
         self._view = view
 
-    def display_error(self, message: str):
+    def display_error(self, message):
+        """
+        :type message: str
+        """
         self._view.output(message, "attention")
 
-    def display_info(self, message: str):
+    def display_info(self, message):
+        """
+        :type message: str
+        """
         self._view.output(message, "info")
 
-    def should_continue(self, messages: List[str]) -> bool:
+    def should_continue(self, messages):
+        """
+        :type messages: list[str]
+        :rtype: bool
+        """
         lines = []
 
         for message in messages:
@@ -179,7 +205,11 @@ class _ModuleView(ModuleViewABC):
         else:
             return False
 
-    def output(self, line: str, prefix=""):
+    def output(self, line, prefix=""):
+        """
+        :type line: str
+        :type prefix: str
+        """
         self._view.output(line, prefix)
 
 
@@ -223,31 +253,52 @@ class ViewCLI(ViewABC):
 
         self._frame.set_focus_path(["footer", 2])
 
-    def output(self, line: str, prefix: str = ""):
+    def output(self, line, prefix=""):
+        """
+        :type line: str
+        :type prefix: str
+        """
         self._output_view.add(line, prefix)
 
-    def on_response(self, response: str):
+    def on_response(self, response):
+        """
+        :type response: str
+        """
         self.output_separator()
 
         for line in response.splitlines():
             self.output(line)
 
-    def on_bot_added(self, bot: Bot):
+    def on_bot_added(self, bot):
+        """
+        :type bot: Bot
+        """
         self.set_window_title("EvilOSX v{} | Port: {} | Available bots: {}".format(
             VERSION, self._server_port, self._model.get_bot_amount()
         ))
 
-    def on_bot_removed(self, bot: Bot):
+    def on_bot_removed(self, bot):
+        """
+        :type bot: Bot
+        """
         self.set_window_title("EvilOSX v{} | Port: {} | Available bots: {}".format(
             VERSION, self._server_port, self._model.get_bot_amount()
         ))
 
-    def on_bot_path_change(self, bot: Bot):
+    def on_bot_path_change(self, bot):
+        """
+        :type bot: Bot
+        """
         self.set_footer_text("Command ({}@{}, {}): ".format(
             bot.username, bot.hostname, bot.local_path
         ))
 
-    def prompt(self, prompt_text: str, lines: list = None) -> str:
+    def prompt(self, prompt_text, lines=None):
+        """
+        :type prompt_text: str
+        :type lines: list or None
+        :rtype: str
+        """
         if lines:
             for line in lines:
                 self._command_input.add(*line)
@@ -255,7 +306,10 @@ class ViewCLI(ViewABC):
 
         return self._command_input.get_prompt_input()
 
-    def _process_command(self, command: str):
+    def _process_command(self, command):
+        """
+        :type command: str
+        """
         if command.strip() == "":
             return
 
@@ -438,11 +492,17 @@ class ViewCLI(ViewABC):
             self.output("Failed to find module: {}".format(module_name), "attention")
             self.output("Type \"modules\" to get a list of available modules.", "attention")
 
-    def set_window_title(self, text: str):
+    def set_window_title(self, text):
+        """
+        :type text: str
+        """
         self._header.set_text(text)
         self._async_reload()
 
-    def set_footer_text(self, text: str):
+    def set_footer_text(self, text):
+        """
+        :type text: str
+        """
         self._command_input.set_header_text(text)
 
     def clear(self):

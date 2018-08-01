@@ -7,8 +7,12 @@ import string
 from abc import ABCMeta, abstractmethod
 
 
-def random_string(size: int = random.randint(6, 15), numbers: bool = False) -> str:
-    """:return A randomly generated string of x characters."""
+def random_string(size=random.randint(6, 15), numbers=False):
+    """
+    :type size: int
+    :type numbers: bool
+    :rtype: str
+    :return A randomly generated string of x characters."""
     result = ""
 
     for i in range(0, size):
@@ -19,10 +23,15 @@ def random_string(size: int = random.randint(6, 15), numbers: bool = False) -> s
     return result
 
 
-class LauncherABC(metaclass=ABCMeta):
+class LauncherABC:
     """Abstract base class for launchers."""
+    __metaclass__ = ABCMeta
 
     @abstractmethod
-    def generate(self, stager: str) -> tuple:
-        """:return A tuple containing the file extension and code of the launcher."""
+    def generate(self, stager):
+        """
+        :type stager: str
+        :rtype: (str, str)
+        :return A tuple containing the file extension and code of the launcher.
+        """
         pass

@@ -3,32 +3,32 @@
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
 
-import importlib.util
+import imp
 from os import path, listdir
 from zlib import compress
 
 _loader_cache = {}
 
 
-def _load_loader(loader_name: str):
-    """Loads the loader and adds it to the cache."""
-    try:
-        # "One might think that python imports are getting more and more complicated with each new version."
-        # Taken from https://stackoverflow.com/a/67692
-        module_path = path.realpath(path.join(path.dirname(__file__), loader_name, "loader.py"))
-        spec = importlib.util.spec_from_file_location(loader_name, module_path)
-        module = importlib.util.module_from_spec(spec)
+def _load_loader(loader_name):
+    """Loads the loader and adds it to the cache.
 
-        spec.loader.exec_module(module)
-        _loader_cache[loader_name] = module.Loader()
+    :type loader_name: str
+    """
+    # Going to use imp over importlib until python decides to remove it.
+    module_path = path.realpath(path.join(path.dirname(__file__), loader_name, "loader.py"))
+    module = imp.load_source(loader_name, module_path)
 
-        return _loader_cache[loader_name]
-    except FileNotFoundError:
-        raise ImportError("Failed to find loader: {}".format(loader_name)) from None
+    _loader_cache[loader_name] = module.Loader()
+
+    return _loader_cache[loader_name]
 
 
-def get_names() -> list:
-    """:return: A list of all loader names."""
+def get_names():
+    """
+    :rtype: list[str]
+    :return: A list of all loader names.
+    """
     names = []
 
     for name in listdir(path.realpath(path.dirname(__file__))):
@@ -40,20 +40,25 @@ def get_names() -> list:
     return names
 
 
-def get_info(loader_name: str) -> dict:
-    """:return: A dictionary containing basic information about the loader."""
+def get_info(loader_name):
+    """
+    :type loader_name: str
+    :rtype: dict
+    :return: A dictionary containing basic information about the loader.
+    """
     cached_loader = _loader_cache.get(loader_name)
 
     if not cached_loader:
         cached_loader = _load_loader(loader_name)
 
-    try:
-        return cached_loader.get_info()
-    except AttributeError:
-        raise AttributeError("The loader \"{}\" is missing the get_info function!".format(loader_name)) from None
+    return cached_loader.get_info()
 
 
-def get_option_messages(loader_name: str) -> list:
+def get_option_messages(loader_name):
+    """
+    :type loader_name: str
+    :rtype: list
+    """
     cached_loader = _loader_cache.get(loader_name)
 
     try:
@@ -66,8 +71,12 @@ def get_option_messages(loader_name: str) -> list:
         return []
 
 
-def get_options(loader_name: str, set_options: list) -> dict:
-    """:return: A dictionary containing the loader's configuration options."""
+def get_options(loader_name, set_options):
+    """:return: A dictionary containing the loader's configuration options.
+
+    :type loader_name: str
+    :type set_options: list
+    """
     cached_loader = _loader_cache.get(loader_name)
 
     if cached_loader:
@@ -76,8 +85,12 @@ def get_options(loader_name: str, set_options: list) -> dict:
         return _load_loader(loader_name).get_options(set_options)
 
 
-def get_remove_code(loader_name: str) -> bytes:
-    """:return: Compressed code which can be run on the bot."""
+def get_remove_code(loader_name):
+    """:return: Compressed code which can be run on the bot.
+
+    :type loader_name: str
+    :rtype: bytes
+    """
     source_path = path.realpath(path.join(path.dirname(__file__), loader_name, "remove.py"))
 
     with open(source_path, "rb") as input_file:
@@ -86,8 +99,12 @@ def get_remove_code(loader_name: str) -> bytes:
     return compress(code)
 
 
-def get_update_code(loader_name: str) -> bytes:
-    """:return: Compressed code which can be run on the bot."""
+def get_update_code(loader_name):
+    """:return: Compressed code which can be run on the bot.
+
+    :type loader_name: str
+    :rtype: bytes
+    """
     source_path = path.realpath(path.join(path.dirname(__file__), loader_name, "update.py"))
 
     with open(source_path, "rb") as input_file:
