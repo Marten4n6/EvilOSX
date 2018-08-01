@@ -15,6 +15,9 @@
   <a href="https://github.com/Marten4n6/EvilOSX/issues">
     <img src="https://img.shields.io/github/issues/Marten4n6/EvilOSX.svg?style=flat-square" alt="Issues">
   </a>
+  <a href="https://travis-ci.org/Marten4n6/EvilOSX">
+      <img src="https://img.shields.io/travis/Marten4n6/EvilOSX/master.svg?style=flat-square" alt="Build Status">
+  </a>
   <a href="https://github.com/Marten4n6/EvilOSX/blob/master/CONTRIBUTING.md">
       <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square" alt="Contributing">
   </a>
@@ -41,22 +44,18 @@
 
 ## How To Use
 
-The server requires [python3](https://www.python.org/downloads/) to run.
-
-### Normal users
-
 ```bash
 # Clone or download this repository
 $ git clone https://github.com/Marten4n6/EvilOSX
 
 # Install dependencies required by the server
-$ sudo pip3 install -r requirements.txt
+$ sudo pip install -r requirements.txt
 
 # Go into the repository
 $ cd EvilOSX
 
 # Start the GUI
-$ python3 start.py
+$ python start.py
 
 # Lastly, run a built launcher on your target(s)
 ```
@@ -64,13 +63,13 @@ $ python3 start.py
 
 ### Advanced users
 
-There is also a command line interface for those who want to use this over SSH:
+There's also a CLI for those who want to use this over SSH:
 ```bash
 # Create a launcher to infect your target(s)
-$ python3 start.py --builder
+$ python start.py --builder
 
 # Start the CLI
-$ python3 start.py --cli --port 1337
+$ python start.py --cli --port 1337
 ```
 
 ## Screenshots
