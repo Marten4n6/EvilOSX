@@ -12,6 +12,9 @@
   <a href="https://github.com/Marten4n6/EvilOSX/blob/master/LICENSE.txt">
       <img src="https://img.shields.io/badge/license-GPLv3-blue.svg?style=flat-square" alt="License">
   </a>
+  <a href="https://github.com/Marten4n6/EvilOSX/blob/master/LICENSE.txt">
+      <img src="https://img.shields.io/badge/python-2.7,%203.7-blue.svg?style=flat-square" alt="Python">
+  </a>
   <a href="https://github.com/Marten4n6/EvilOSX/issues">
     <img src="https://img.shields.io/github/issues/Marten4n6/EvilOSX.svg?style=flat-square" alt="Issues">
   </a>
@@ -99,7 +102,8 @@ ENTER
 ```
 - It takes about 10 seconds to backdoor any unlocked Mac, which is...... *nice*
 - Termina**l** is spelt that way intentionally, on some systems spotlight won't find the terminal otherwise. <br/>
-- To bypass the keyboard setup assistant make sure you change the VID&PID which can be found [here](https://ducktoolkit.com/vidpid/). Aluminum Keyboard (ISO) is probably the one you are looking for.
+- To bypass the keyboard setup assistant make sure you change the VID&PID which can be found [here](https://ducktoolkit.com/vidpid/). <br/>
+  Aluminum Keyboard (ISO) is probably the one you are looking for.
 
 
 ## Versioning
@@ -131,7 +135,7 @@ For more information on SemVer, please visit https://semver.org/.
 Feel free to submit any issues or feature requests [here](https://github.com/Marten4n6/EvilOSX/issues).
 
 ## Contributing
-For a simple guide on how to create modules, click [here](https://github.com/Marten4n6/EvilOSX/blob/master/CONTRIBUTING.md).
+For a simple guide on how to create modules click [here](https://github.com/Marten4n6/EvilOSX/blob/master/CONTRIBUTING.md).
 
 ## Credits
 - The awesome [Empire](https://github.com/EmpireProject) project
