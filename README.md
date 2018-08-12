@@ -34,7 +34,6 @@
 - No bot dependencies (pure python)
 - Undetected by anti-virus (OpenSSL [AES-256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encrypted payloads)
 - Persistent
-- GUI and CLI support
 - Retrieve Chrome passwords
 - Retrieve iCloud tokens and contacts
 - Retrieve/monitor the clipboard
@@ -57,27 +56,19 @@ $ cd EvilOSX
 # Install dependencies required by the server
 $ sudo pip install -r requirements.txt
 
-# Start the GUI
+# Create a launcher to infect your target(s)
+$ python start.py --builder
+
+# Start the CLI
 $ python start.py
 
 # Lastly, run a built launcher on your target(s)
 ```
 **Warning:** Because payloads are created unique to the target system (automatically by the server), the server must be running when any bot connects for the first time.
 
-### Advanced users
-
-There's also a CLI for those who want to use this over SSH:
-```bash
-# Create a launcher to infect your target(s)
-$ python start.py --builder
-
-# Start the CLI
-$ python start.py --cli --port 1337
-```
-
 ## Screenshots
+
 ![CLI](https://i.imgur.com/DGYCQMl.png)
-![GUI](https://i.imgur.com/qw3k4z4.png)
 
 ## Motivation
 This project was created to be used with my [Rubber Ducky](https://hakshop.com/products/usb-rubber-ducky-deluxe), here's the simple script:
@@ -140,9 +131,10 @@ For a simple guide on how to create modules click [here](https://github.com/Mart
 ## Credits
 - The awesome [Empire](https://github.com/EmpireProject) project
 - Shoutout to [Patrick Wardle](https://twitter.com/patrickwardle) for his awesome talks, check out [Objective-See](https://objective-see.com/)
-- [manwhoami](https://github.com/manwhoami) for his projects: [OSXChromeDecrypt](https://github.com/manwhoami/OSXChromeDecrypt), [MMeTokenDecrypt](https://github.com/manwhoami/MMeTokenDecrypt), [iCloudContacts](https://github.com/manwhoami/iCloudContacts)
+- manwhoami for his projects: OSXChromeDecrypt, MMeTokenDecrypt, iCloudContacts <br/>
+  (now deleted... let me know if you reappear)
 - The slowloris module is pretty much copied from [PySlowLoris](https://github.com/ProjectMayhem/PySlowLoris)
-- [urwid](http://urwid.org/) and [this code](https://github.com/izderadicka/xmpp-tester/blob/master/commander.py) which saved me a lot of time with the GUI
+- [urwid](http://urwid.org/) and [this code](https://github.com/izderadicka/xmpp-tester/blob/master/commander.py) which saved me a lot of time with the CLI
 - Logo created by [motusora](https://www.behance.net/motusora)
 
 ## License
