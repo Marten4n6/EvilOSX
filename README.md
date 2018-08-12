@@ -66,6 +66,18 @@ $ python start.py
 ```
 **Warning:** Because payloads are created unique to the target system (automatically by the server), the server must be running when any bot connects for the first time.
 
+### Docker
+
+EvilOSX is containerized using [Alpine Linux](https://alpinelinux.org/).
+
+```bash
+# Pull the latest version of the image:
+$ docker pull marten4n6/evilosx
+
+# Start the CLI
+$ docker run -ti evilosx
+```
+
 ## Screenshots
 
 ![CLI](https://i.imgur.com/DGYCQMl.png)
