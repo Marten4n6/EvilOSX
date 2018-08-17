@@ -34,6 +34,7 @@
 - No bot dependencies (pure python)
 - Undetected by anti-virus (OpenSSL [AES-256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encrypted payloads)
 - Persistent
+- GUI and CLI support
 - Retrieve Chrome passwords
 - Retrieve iCloud tokens and contacts
 - Retrieve/monitor the clipboard
@@ -56,19 +57,31 @@ $ cd EvilOSX
 # Install dependencies required by the server
 $ sudo pip install -r requirements.txt
 
-# Create a launcher to infect your target(s)
-$ python start.py --builder
-
-# Start the CLI
+# Start the GUI
 $ python start.py
 
 # Lastly, run a built launcher on your target(s)
 ```
+
 **Warning:** Because payloads are created unique to the target system (automatically by the server), the server must be running when any bot connects for the first time.
+
+### Advanced users
+
+There's also a CLI for those who want to use this over SSH:
+```bash
+# Create a launcher to infect your target(s)
+$ python start.py --builder
+
+# Start the CLI
+$ python start.py --cli --port 1337
+
+# Lastly, run a built launcher on your target(s)
+```
 
 ## Screenshots
 
 ![CLI](https://i.imgur.com/DGYCQMl.png)
+![GUI](https://i.imgur.com/qw3k4z4.png)
 
 ## Motivation
 This project was created to be used with my [Rubber Ducky](https://hakshop.com/products/usb-rubber-ducky-deluxe), here's the simple script:

