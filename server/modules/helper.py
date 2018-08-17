@@ -114,4 +114,4 @@ class ModuleABC:
         :type response_options: dict
         """
         self._view.output_separator()
-        self._view.output(response)
+        self._view.output(response.decode())
