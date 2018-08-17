@@ -22,7 +22,6 @@ def get_names():
         if not filename.endswith(".py") or filename in ["__init__.py", "helper.py"]:
             continue
         else:
-            print("Adding: " + filename)
             launcher_names.append(filename.replace(".py", "", 1))
 
     return launcher_names
