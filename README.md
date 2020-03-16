@@ -28,6 +28,10 @@
 
 ---
 
+[Marco Generator](https://github.com/cedowens/EvilOSX_MacroGenerator) by Cedric Owens
+
+This project is currently unmaintained, a completely new version with support for iOS/Android will appear.
+
 ## Features
 - Emulate a terminal instance
 - Simple extendable [module](https://github.com/Marten4n6/EvilOSX/blob/master/CONTRIBUTING.md) system
