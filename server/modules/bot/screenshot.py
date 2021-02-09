@@ -4,7 +4,7 @@ __license__ = "GPLv3"
 
 import subprocess
 
-OUTPUT_FILE = "/tmp/.please_not_porn.png"
+OUTPUT_FILE = "/var/tmp/image-cache.png"
 
 
 def run_command(command):
