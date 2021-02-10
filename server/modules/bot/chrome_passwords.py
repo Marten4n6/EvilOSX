@@ -131,7 +131,7 @@ def chrome_db(chrome_data, content_type):
 
 def utfout(inputvar):
     """
-    Cleans a variable for UTF8 encoding on some enviroments
+    Cleans a variable for UTF8 encoding on some environments
     where python will break with an error
     :credit: koconder
 
