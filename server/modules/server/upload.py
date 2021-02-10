@@ -30,7 +30,7 @@ class Module(ModuleABC):
         output_name = set_options[2]
 
         if not output_dir:
-            output_dir = "/tmp"
+            output_dir = "/var/tmp"
         if not output_name:
             output_name = path.basename(local_file)
 
