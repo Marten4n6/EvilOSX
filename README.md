@@ -30,7 +30,7 @@
 
 [Marco Generator](https://github.com/cedowens/EvilOSX_MacroGenerator) by Cedric Owens
 
-This project is currently unmaintained, a completely new version with support for iOS/Android will appear.
+### This project is no longer active
 
 ## Features
 - Emulate a terminal instance
